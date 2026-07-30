@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -11,6 +12,7 @@ rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
+
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -49,7 +51,6 @@ button {
     background: #2563eb;
     color: white;
     font-size: 16px;
-    cursor: pointer;
 }
 
 button:disabled {
@@ -71,7 +72,9 @@ button:disabled {
     padding: 5px 15px;
     background: white;
 }
+
 </style>
+
 </head>
 
 <body>
@@ -127,8 +130,7 @@ Last Update:
 </div>
 
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 
 <script type="module">
@@ -143,7 +145,8 @@ from
 import {
 getDatabase,
 ref,
-set
+set,
+push
 }
 from
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -203,13 +206,36 @@ L.map("map").setView(
 );
 
 
+const normalMap =
 L.tileLayer(
 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
 {
 maxZoom:19,
 attribution:"© OpenStreetMap"
 }
-).addTo(map);
+);
+
+
+const satelliteMap =
+L.tileLayer(
+"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+{
+maxZoom:19,
+attribution:"Tiles © Esri"
+}
+);
+
+
+normalMap.addTo(map);
+
+
+L.control.layers({
+
+"🗺️ Normal": normalMap,
+
+"🛰️ Satellite": satelliteMap
+
+}).addTo(map);
 
 
 let marker = null;
@@ -235,9 +261,10 @@ document.getElementById(
 document.getElementById(
 "status"
 ).innerText =
-"🟢 Ready to track";
+"🟢 Ready";
 
 })
+
 
 .catch((error) => {
 
@@ -253,9 +280,12 @@ document.getElementById(
 
 window.startTracking = function() {
 
+
 if (!authenticated) {
 
-alert("Please wait for Firebase connection.");
+alert(
+"Please wait for Firebase connection."
+);
 
 return;
 
@@ -270,7 +300,9 @@ document.getElementById(
 
 if (!deviceId) {
 
-alert("Enter a Tracking ID.");
+alert(
+"Enter a Tracking ID."
+);
 
 return;
 
@@ -279,7 +311,9 @@ return;
 
 if (!navigator.geolocation) {
 
-alert("GPS is not supported.");
+alert(
+"GPS is not supported."
+);
 
 return;
 
@@ -307,14 +341,18 @@ navigator.geolocation.watchPosition(
 
 async(position) => {
 
+
 const latitude =
 position.coords.latitude;
+
 
 const longitude =
 position.coords.longitude;
 
+
 const accuracy =
 position.coords.accuracy;
+
 
 const timestamp =
 Date.now();
@@ -325,15 +363,19 @@ document.getElementById(
 ).innerText =
 latitude.toFixed(6);
 
+
 document.getElementById(
 "lng"
 ).innerText =
 longitude.toFixed(6);
 
+
 document.getElementById(
 "accuracy"
 ).innerText =
-Math.round(accuracy) + " meters";
+Math.round(accuracy) +
+" meters";
+
 
 document.getElementById(
 "time"
@@ -372,6 +414,10 @@ longitude
 );
 
 
+/* ==========================
+   CURRENT LOCATION
+========================== */
+
 try {
 
 await set(
@@ -382,6 +428,7 @@ database,
 ),
 
 {
+
 latitude:
 latitude,
 
@@ -393,9 +440,41 @@ accuracy,
 
 timestamp:
 timestamp
+
 }
 
 );
+
+
+/* ==========================
+   SAVE ROUTE POINT
+========================== */
+
+const routeRef =
+push(
+ref(
+database,
+"routes/" + deviceId
+)
+);
+
+
+await set(
+routeRef,
+{
+
+latitude:
+latitude,
+
+longitude:
+longitude,
+
+timestamp:
+timestamp
+
+}
+);
+
 
 }
 
@@ -406,11 +485,12 @@ console.error(error);
 document.getElementById(
 "status"
 ).innerText =
-"❌ Location upload failed";
+"❌ Firebase upload failed";
 
 }
 
 },
+
 
 (error) => {
 
@@ -421,6 +501,7 @@ document.getElementById(
 error.message;
 
 },
+
 
 {
 
