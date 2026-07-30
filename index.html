@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Live Location Tracker</title>
 
+  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -25,7 +28,7 @@
     header {
       background: #111827;
       color: white;
-      padding: 15px;
+      padding: 16px;
       text-align: center;
       font-size: 20px;
       font-weight: bold;
@@ -40,7 +43,7 @@
       width: 100%;
       padding: 14px;
       margin-bottom: 10px;
-      border: 0;
+      border: none;
       border-radius: 8px;
       background: #2563eb;
       color: white;
@@ -50,6 +53,11 @@
 
     button.viewer {
       background: #059669;
+    }
+
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
     }
 
     #map {
@@ -65,18 +73,18 @@
     .status {
       font-size: 18px;
       font-weight: bold;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
     .info {
-      margin: 6px 0;
+      margin: 7px 0;
+      color: #444;
     }
 
-    .hidden {
-      display: none;
-    }
   </style>
+
 </head>
+
 
 <body>
 
@@ -84,24 +92,39 @@
   📍 Live Location Tracker
 </header>
 
+
 <div class="controls">
 
-  <button onclick="startTracking()">
-    📱 START TRACKING
+  <button
+    id="trackingButton"
+    onclick="startTracking()"
+    disabled
+  >
+    ⏳ Connecting...
   </button>
 
-  <button class="viewer" onclick="startViewer()">
-    👀 VIEW LIVE LOCATION
+  <button
+    id="viewerButton"
+    class="viewer"
+    onclick="startViewer()"
+    disabled
+  >
+    ⏳ Connecting...
   </button>
 
 </div>
 
+
 <div id="map"></div>
+
 
 <div class="panel">
 
-  <div class="status" id="status">
-    🔴 Not Started
+  <div
+    class="status"
+    id="status"
+  >
+    🔄 Connecting to Firebase...
   </div>
 
   <div class="info">
@@ -127,10 +150,23 @@
 </div>
 
 
+<!-- Leaflet JS -->
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+
+<!-- Firebase -->
+
 <script type="module">
 
-  import { initializeApp }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    initializeApp
+  }
+  from
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
 
   import {
     getDatabase,
@@ -138,12 +174,21 @@
     set,
     onValue
   }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  from
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
-  // ==============================
+  import {
+    getAuth,
+    signInAnonymously
+  }
+  from
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+  // =====================================
   // FIREBASE CONFIG
-  // ==============================
+  // =====================================
 
   const firebaseConfig = {
 
@@ -170,41 +215,126 @@
 
     measurementId:
       "G-E40PJX034X"
+
   };
 
 
-  const app = initializeApp(firebaseConfig);
+  // =====================================
+  // INITIALIZE FIREBASE
+  // =====================================
 
-  const database = getDatabase(app);
+  const app =
+    initializeApp(firebaseConfig);
 
 
-  // ==============================
+  const database =
+    getDatabase(app);
+
+
+  const auth =
+    getAuth(app);
+
+
+  // =====================================
   // MAP
-  // ==============================
+  // =====================================
 
   const map =
-    L.map("map").setView([23.8103, 90.4125], 13);
+    L.map("map").setView(
+      [23.8103, 90.4125],
+      13
+    );
 
 
   L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
       maxZoom: 19,
-      attribution: "© OpenStreetMap"
+      attribution:
+        "© OpenStreetMap"
     }
   ).addTo(map);
 
 
   let marker = null;
 
-  let trackingStarted = false;
+  let userAuthenticated = false;
 
 
-  // ==============================
-  // TRACKER
-  // ==============================
+  // =====================================
+  // AUTHENTICATION
+  // =====================================
+
+  signInAnonymously(auth)
+
+    .then(() => {
+
+      userAuthenticated = true;
+
+
+      document.getElementById(
+        "trackingButton"
+      ).disabled = false;
+
+
+      document.getElementById(
+        "viewerButton"
+      ).disabled = false;
+
+
+      document.getElementById(
+        "trackingButton"
+      ).innerText =
+        "📱 START TRACKING";
+
+
+      document.getElementById(
+        "viewerButton"
+      ).innerText =
+        "👀 VIEW LIVE LOCATION";
+
+
+      document.getElementById(
+        "status"
+      ).innerText =
+        "🟢 Connected to Firebase";
+
+    })
+
+
+    .catch((error) => {
+
+      console.error(
+        "Authentication Error:",
+        error
+      );
+
+
+      document.getElementById(
+        "status"
+      ).innerText =
+        "❌ Firebase Authentication Failed";
+
+    });
+
+
+  // =====================================
+  // START TRACKING
+  // =====================================
 
   window.startTracking = function () {
+
+
+    if (!userAuthenticated) {
+
+      alert(
+        "Please wait for Firebase connection."
+      );
+
+      return;
+
+    }
+
 
     if (!navigator.geolocation) {
 
@@ -213,43 +343,73 @@
       );
 
       return;
+
     }
 
 
-    trackingStarted = true;
-
-    document.getElementById("status").innerText =
+    document.getElementById(
+      "status"
+    ).innerText =
       "🟢 TRACKING LIVE";
 
 
     navigator.geolocation.watchPosition(
 
+
       async function(position) {
+
 
         const latitude =
           position.coords.latitude;
 
+
         const longitude =
           position.coords.longitude;
+
 
         const accuracy =
           position.coords.accuracy;
 
 
-        document.getElementById("lat").innerText =
+        const timestamp =
+          Date.now();
+
+
+        // =================================
+        // UPDATE SCREEN
+        // =================================
+
+        document.getElementById(
+          "lat"
+        ).innerText =
           latitude.toFixed(6);
 
-        document.getElementById("lng").innerText =
+
+        document.getElementById(
+          "lng"
+        ).innerText =
           longitude.toFixed(6);
 
-        document.getElementById("accuracy").innerText =
-          Math.round(accuracy) + " meters";
 
-        document.getElementById("lastUpdate").innerText =
-          new Date().toLocaleTimeString();
+        document.getElementById(
+          "accuracy"
+        ).innerText =
+          Math.round(
+            accuracy
+          ) + " meters";
 
 
-        // Marker
+        document.getElementById(
+          "lastUpdate"
+        ).innerText =
+          new Date(
+            timestamp
+          ).toLocaleTimeString();
+
+
+        // =================================
+        // UPDATE MAP MARKER
+        // =================================
 
         if (marker) {
 
@@ -258,7 +418,9 @@
             longitude
           ]);
 
-        } else {
+        }
+
+        else {
 
           marker =
             L.marker([
@@ -271,56 +433,86 @@
 
 
         map.setView(
-          [latitude, longitude],
+          [
+            latitude,
+            longitude
+          ],
           17
         );
 
 
-        // Firebase
+        // =================================
+        // SEND TO FIREBASE
+        // =================================
 
-        await set(
+        try {
 
-          ref(
-            database,
-            "locations/device1"
-          ),
+          await set(
 
-          {
+            ref(
+              database,
+              "locations/device1"
+            ),
 
-            latitude:
-              latitude,
+            {
 
-            longitude:
-              longitude,
+              latitude:
+                latitude,
 
-            accuracy:
-              accuracy,
+              longitude:
+                longitude,
 
-            timestamp:
-              Date.now()
+              accuracy:
+                accuracy,
 
-          }
+              timestamp:
+                timestamp
 
-        );
+            }
+
+          );
+
+        }
+
+        catch (error) {
+
+          console.error(
+            "Firebase Write Error:",
+            error
+          );
+
+
+          document.getElementById(
+            "status"
+          ).innerText =
+            "❌ Unable to send location";
+
+        }
 
       },
 
 
       function(error) {
 
-        document.getElementById("status").innerText =
-          "❌ GPS Error: " + error.message;
+        document.getElementById(
+          "status"
+        ).innerText =
+          "❌ GPS Error: " +
+          error.message;
 
       },
 
 
       {
 
-        enableHighAccuracy: true,
+        enableHighAccuracy:
+          true,
 
-        maximumAge: 0,
+        maximumAge:
+          0,
 
-        timeout: 10000
+        timeout:
+          10000
 
       }
 
@@ -329,13 +521,27 @@
   };
 
 
-  // ==============================
-  // VIEWER
-  // ==============================
+  // =====================================
+  // VIEW LIVE LOCATION
+  // =====================================
 
-  window.startViewer = function () {
+  window.startViewer = function() {
 
-    document.getElementById("status").innerText =
+
+    if (!userAuthenticated) {
+
+      alert(
+        "Please wait for Firebase connection."
+      );
+
+      return;
+
+    }
+
+
+    document.getElementById(
+      "status"
+    ).innerText =
       "👀 WATCHING LIVE LOCATION";
 
 
@@ -350,7 +556,9 @@
 
       locationRef,
 
+
       function(snapshot) {
+
 
         const data =
           snapshot.val();
@@ -358,38 +566,81 @@
 
         if (!data) {
 
-          document.getElementById("status").innerText =
+          document.getElementById(
+            "status"
+          ).innerText =
             "⚠️ No location data yet";
 
           return;
+
         }
 
 
         const latitude =
-          data.latitude;
+          Number(
+            data.latitude
+          );
+
 
         const longitude =
-          data.longitude;
+          Number(
+            data.longitude
+          );
 
 
-        document.getElementById("lat").innerText =
-          Number(latitude).toFixed(6);
-
-        document.getElementById("lng").innerText =
-          Number(longitude).toFixed(6);
-
-        document.getElementById("accuracy").innerText =
-          Math.round(data.accuracy) +
-          " meters";
+        const accuracy =
+          Number(
+            data.accuracy
+          );
 
 
-        document.getElementById("lastUpdate").innerText =
-          new Date(
+        const timestamp =
+          Number(
             data.timestamp
+          );
+
+
+        // =================================
+        // UPDATE INFORMATION
+        // =================================
+
+        document.getElementById(
+          "status"
+        ).innerText =
+          "🟢 LIVE LOCATION";
+
+
+        document.getElementById(
+          "lat"
+        ).innerText =
+          latitude.toFixed(6);
+
+
+        document.getElementById(
+          "lng"
+        ).innerText =
+          longitude.toFixed(6);
+
+
+        document.getElementById(
+          "accuracy"
+        ).innerText =
+          Math.round(
+            accuracy
+          ) + " meters";
+
+
+        document.getElementById(
+          "lastUpdate"
+        ).innerText =
+          new Date(
+            timestamp
           ).toLocaleTimeString();
 
 
-        // Viewer marker
+        // =================================
+        // UPDATE VIEWER MARKER
+        // =================================
 
         if (marker) {
 
@@ -398,7 +649,9 @@
             longitude
           ]);
 
-        } else {
+        }
+
+        else {
 
           marker =
             L.marker([
@@ -411,9 +664,27 @@
 
 
         map.setView(
-          [latitude, longitude],
+          [
+            latitude,
+            longitude
+          ],
           17
         );
+
+      },
+
+      function(error) {
+
+        console.error(
+          "Firebase Read Error:",
+          error
+        );
+
+
+        document.getElementById(
+          "status"
+        ).innerText =
+          "❌ Unable to read location";
 
       }
 
@@ -421,11 +692,7 @@
 
   };
 
-</script>
 
-
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 </script>
 
 </body>
