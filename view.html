@@ -54,7 +54,6 @@ button {
     background: #059669;
     color: white;
     font-size: 16px;
-    cursor: pointer;
 }
 
 button:disabled {
@@ -81,44 +80,30 @@ button:disabled {
 
 </head>
 
-
 <body>
 
-
 <header>
-
 👀 LIVE LOCATION VIEWER
-
 </header>
 
 
 <div class="container">
 
-
 <label>Tracking ID</label>
 
-
 <input
-
 id="deviceId"
-
 value="REYAD001"
-
 placeholder="Example: REYAD001">
 
-
 <button
-
 id="viewButton"
-
 onclick="startViewer()"
-
 disabled>
 
 ⏳ Connecting...
 
 </button>
-
 
 </div>
 
@@ -135,40 +120,24 @@ id="status">
 
 
 <div class="info">
-
 Latitude:
-
 <span id="lat">---</span>
-
 </div>
 
-
 <div class="info">
-
 Longitude:
-
 <span id="lng">---</span>
-
 </div>
 
-
 <div class="info">
-
 Accuracy:
-
 <span id="accuracy">---</span>
-
 </div>
-
 
 <div class="info">
-
 Last Update:
-
 <span id="time">---</span>
-
 </div>
-
 
 
 <script
@@ -176,175 +145,101 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 </script>
 
 
-
 <script type="module">
 
-
 import {
-
 initializeApp
-
 }
-
 from
-
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 
-
 import {
-
 getDatabase,
-
 ref,
-
 onValue
-
 }
-
 from
-
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
-
 import {
-
 getAuth,
-
 signInAnonymously
-
 }
-
 from
-
 "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
 
 
 const firebaseConfig = {
 
-
 apiKey:
-
 "AIzaSyC_iYK2KfWtLqDy2rcGeyWR6M1RfGosGpw",
 
-
 authDomain:
-
 "my-mobile-live-location.firebaseapp.com",
 
-
 databaseURL:
-
 "https://my-mobile-live-location-default-rtdb.firebaseio.com",
 
-
 projectId:
-
 "my-mobile-live-location",
 
-
 storageBucket:
-
 "my-mobile-live-location.firebasestorage.app",
 
-
 messagingSenderId:
-
 "1001346063788",
 
-
 appId:
-
 "1:1001346063788:web:7c4f0d45b03bf2d6b86e09",
 
-
 measurementId:
-
 "G-E40PJX034X"
 
 };
 
 
-
 const app =
-
 initializeApp(firebaseConfig);
 
-
-
 const database =
-
 getDatabase(app);
 
-
-
 const auth =
-
 getAuth(app);
 
 
-
-/* ===========================
-   NORMAL MAP
-=========================== */
+/* ==========================
+   MAP LAYERS
+========================== */
 
 
 const normalMap =
-
 L.tileLayer(
-
 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-
 {
-
-maxZoom: 19,
-
-attribution:
-"© OpenStreetMap"
-
+maxZoom:19,
+attribution:"© OpenStreetMap"
 }
-
 );
-
-
-
-/* ===========================
-   SATELLITE MAP
-=========================== */
 
 
 const satelliteMap =
-
 L.tileLayer(
-
 "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-
 {
-
-maxZoom: 19,
-
-attribution:
-"Tiles © Esri"
-
+maxZoom:19,
+attribution:"Tiles © Esri"
 }
-
 );
 
 
-
-/* ===========================
-   MAP
-=========================== */
-
-
 const map =
-
 L.map("map", {
 
 center:
-[23.8103, 90.4125],
+[23.8103,90.4125],
 
 zoom:
 13,
@@ -355,73 +250,45 @@ layers:
 });
 
 
+L.control.layers({
 
-/* ===========================
-   MAP SWITCHER
-=========================== */
+"🗺️ Normal": normalMap,
 
+"🛰️ Satellite": satelliteMap
 
-const baseMaps = {
-
-"🗺️ Normal":
-normalMap,
-
-"🛰️ Satellite":
-satelliteMap
-
-};
-
-
-
-L.control.layers(
-
-baseMaps
-
-).addTo(map);
-
+}).addTo(map);
 
 
 let marker = null;
 
+let routeLine = null;
+
 let authenticated = false;
 
 
-
-/* ===========================
+/* ==========================
    AUTH
-=========================== */
+========================== */
 
 
 signInAnonymously(auth)
 
 .then(() => {
 
-
 authenticated = true;
 
-
 document.getElementById(
-
 "viewButton"
-
 ).disabled = false;
 
-
 document.getElementById(
-
 "viewButton"
-
 ).innerText =
-
 "👀 VIEW LIVE LOCATION";
 
-
 document.getElementById(
-
 "status"
-
 ).innerText =
-
 "🟢 Ready";
 
 })
@@ -429,25 +296,19 @@ document.getElementById(
 
 .catch((error) => {
 
-
 console.error(error);
 
-
 document.getElementById(
-
 "status"
-
 ).innerText =
-
 "❌ Firebase authentication failed";
 
 });
 
 
-
-/* ===========================
+/* ==========================
    VIEWER
-=========================== */
+========================== */
 
 
 window.startViewer = function() {
@@ -455,268 +316,268 @@ window.startViewer = function() {
 
 if (!authenticated) {
 
-
 alert(
-
 "Please wait for Firebase connection."
-
 );
-
 
 return;
 
 }
 
 
-
 const deviceId =
-
 document.getElementById(
-
 "deviceId"
-
 ).value.trim();
-
 
 
 if (!deviceId) {
 
-
 alert(
-
 "Enter a Tracking ID."
-
 );
-
 
 return;
 
 }
 
 
-
 document.getElementById(
-
 "viewButton"
-
 ).disabled = true;
 
 
-
 document.getElementById(
-
 "viewButton"
-
 ).innerText =
-
 "🟢 WATCHING LIVE";
 
 
-
 document.getElementById(
-
 "status"
-
 ).innerText =
+"🔄 Loading route...";
 
-"🔄 Waiting for location...";
 
+/* ==========================
+   CURRENT LOCATION
+========================== */
 
 
 const locationRef =
-
 ref(
-
 database,
-
 "locations/" + deviceId
-
 );
-
 
 
 onValue(
 
 locationRef,
 
-
 (snapshot) => {
 
 
 const data =
-
 snapshot.val();
-
 
 
 if (!data) {
 
-
 document.getElementById(
-
 "status"
-
 ).innerText =
-
-"⚠️ No location found for this ID";
-
+"⚠️ No location found";
 
 return;
 
 }
 
 
-
 const latitude =
-
 Number(data.latitude);
 
 
-
 const longitude =
-
 Number(data.longitude);
 
 
-
 const accuracy =
-
 Number(data.accuracy);
 
 
-
 const timestamp =
-
 Number(data.timestamp);
 
 
-
 document.getElementById(
-
 "status"
-
 ).innerText =
-
 "🟢 LIVE LOCATION";
 
 
-
 document.getElementById(
-
 "lat"
-
 ).innerText =
-
 latitude.toFixed(6);
 
 
-
 document.getElementById(
-
 "lng"
-
 ).innerText =
-
 longitude.toFixed(6);
 
 
-
 document.getElementById(
-
 "accuracy"
-
 ).innerText =
-
 Math.round(accuracy) +
-
 " meters";
 
 
-
 document.getElementById(
-
 "time"
-
 ).innerText =
-
 new Date(timestamp)
-
 .toLocaleTimeString();
 
 
-
-/* ===========================
+/* ==========================
    MARKER
-=========================== */
+========================== */
 
 
 if (marker) {
 
-
 marker.setLatLng([
-
 latitude,
-
 longitude
-
 ]);
-
 
 }
 
 else {
 
-
 marker =
-
 L.marker([
-
 latitude,
-
 longitude
-
 ])
-
 .addTo(map);
 
 }
 
 
-/* ===========================
-   CENTER MAP
-=========================== */
-
-
 map.setView(
-
 [
-
 latitude,
-
 longitude
-
 ],
-
 17
+);
+
+}
 
 );
 
-},
+
+/* ==========================
+   ROUTE HISTORY
+========================== */
 
 
-(error) => {
+const routeRef =
+ref(
+database,
+"routes/" + deviceId
+);
 
 
-console.error(error);
+onValue(
+
+routeRef,
+
+(snapshot) => {
 
 
-document.getElementById(
+const data =
+snapshot.val();
 
-"status"
 
-).innerText =
+if (!data) {
 
-"❌ Unable to read location";
+return;
+
+}
+
+
+const points = [];
+
+
+Object.values(data)
+
+.sort(
+(a,b) =>
+Number(a.timestamp) -
+Number(b.timestamp)
+)
+
+.forEach(point => {
+
+
+const latitude =
+Number(point.latitude);
+
+
+const longitude =
+Number(point.longitude);
+
+
+if (
+Number.isFinite(latitude) &&
+Number.isFinite(longitude)
+) {
+
+points.push([
+latitude,
+longitude
+]);
+
+}
+
+});
+
+
+if (points.length === 0) {
+
+return;
+
+}
+
+
+/* ==========================
+   DRAW ROUTE
+========================== */
+
+
+if (routeLine) {
+
+routeLine.setLatLngs(points);
+
+}
+
+else {
+
+routeLine =
+L.polyline(
+points,
+{
+weight: 5
+}
+)
+.addTo(map);
+
+}
 
 }
 
@@ -724,9 +585,7 @@ document.getElementById(
 
 };
 
-
 </script>
-
 
 </body>
 
