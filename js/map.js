@@ -1,4 +1,3 @@
-
 // Leaflet Map Helper
 
 export let map = null;
@@ -6,6 +5,10 @@ export let marker = null;
 export let routeLine = null;
 
 export function createMap(divId = "map") {
+
+    if (map) {
+        return map;
+    }
 
     const normalLayer = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -29,15 +32,19 @@ export function createMap(divId = "map") {
         layers: [normalLayer]
     });
 
-    L.control.layers({
-        "🗺 Normal": normalLayer,
-        "🛰 Satellite": satelliteLayer
-    }).addTo(map);
+    L.control.layers(
+        {
+            "🗺 Normal": normalLayer,
+            "🛰 Satellite": satelliteLayer
+        }
+    ).addTo(map);
 
     return map;
 }
 
 export function updateMarker(lat, lng) {
+
+    if (!map) return;
 
     if (marker) {
 
@@ -50,11 +57,12 @@ export function updateMarker(lat, lng) {
     }
 
     map.setView([lat, lng], 17);
+
 }
 
 export function drawRoute(points) {
 
-    if (!points || points.length === 0) return;
+    if (!map || !points || points.length === 0) return;
 
     if (routeLine) {
 
@@ -63,7 +71,8 @@ export function drawRoute(points) {
     } else {
 
         routeLine = L.polyline(points, {
-            weight: 5
+            weight: 5,
+            color: "#2563eb"
         }).addTo(map);
 
     }

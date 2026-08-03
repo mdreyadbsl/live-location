@@ -1,90 +1,81 @@
-
 // ================================
 // Utility Functions
-// Live Location Tracker V2
+// Live Location Tracker V2.0
 // ================================
 
 // Format Time
 export function formatTime(timestamp) {
-
-    const date = new Date(timestamp);
-
-    return date.toLocaleTimeString();
+    if (!timestamp) return "---";
+    return new Date(timestamp).toLocaleTimeString();
 }
 
 // Format Date
 export function formatDate(timestamp) {
-
-    const date = new Date(timestamp);
-
-    return date.toLocaleDateString();
+    if (!timestamp) return "---";
+    return new Date(timestamp).toLocaleDateString();
 }
 
 // GPS Accuracy
 export function formatAccuracy(value) {
-
+    if (value == null) return "---";
     return Math.round(value) + " m";
 }
 
-// Speed (meter/sec → km/h)
+// Speed (m/s → km/h)
 export function formatSpeed(speed) {
-
-    if (speed == null) return "0 km/h";
-
+    if (speed == null) return "0.0 km/h";
     return (speed * 3.6).toFixed(1) + " km/h";
 }
 
 // Distance (meter → km)
 export function formatDistance(meter) {
-
+    if (!meter) return "0.00 km";
     return (meter / 1000).toFixed(2) + " km";
 }
 
 // Internet Status
 export function isOnline() {
-
     return navigator.onLine;
 }
 
-// Status Text
 export function getConnectionStatus() {
-
     return navigator.onLine ? "🟢 ONLINE" : "🔴 OFFLINE";
 }
 
-// Calculate Distance (Haversine Formula)
+// Haversine Distance
 export function calculateDistance(lat1, lon1, lat2, lon2) {
 
     const R = 6371000;
 
     const dLat = (lat2 - lat1) * Math.PI / 180;
-
     const dLon = (lon2 - lon1) * Math.PI / 180;
 
     const a =
-        Math.sin(dLat / 2) *
-        Math.sin(dLat / 2) +
-
+        Math.sin(dLat / 2) ** 2 +
         Math.cos(lat1 * Math.PI / 180) *
         Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
 
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
 // Battery Level
 export async function getBatteryLevel() {
 
-    if (!navigator.getBattery) {
-
-        return "Unknown";
+    if (!("getBattery" in navigator)) {
+        return "Unsupported";
     }
 
-    const battery = await navigator.getBattery();
+    try {
 
-    return Math.round(battery.level * 100) + "%";
+        const battery = await navigator.getBattery();
+
+        return Math.round(battery.level * 100) + "%";
+
+    } catch {
+
+        return "Unknown";
+
+    }
+
 }

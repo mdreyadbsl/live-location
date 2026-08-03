@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -7,73 +8,8 @@
 
 <title>Live Location Tracker</title>
 
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
-<style>
-
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f5f5f5;
-}
-
-header {
-    background: #111827;
-    color: white;
-    padding: 18px;
-    text-align: center;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.container {
-    padding: 15px;
-    background: white;
-}
-
-input {
-    width: 100%;
-    padding: 14px;
-    margin: 8px 0;
-    box-sizing: border-box;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-}
-
-button {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 8px;
-    background: #2563eb;
-    color: white;
-    font-size: 16px;
-}
-
-button:disabled {
-    background: #999;
-}
-
-#map {
-    height: 55vh;
-    width: 100%;
-}
-
-.status {
-    padding: 15px;
-    background: white;
-    font-weight: bold;
-}
-
-.info {
-    padding: 5px 15px;
-    background: white;
-}
-
-</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="./css/style.css">
 
 </head>
 
@@ -89,8 +25,9 @@ button:disabled {
 
 <input
 id="deviceId"
+type="text"
 value="REYAD001"
-placeholder="Example: REYAD001">
+placeholder="Example : REYAD001">
 
 <button
 id="startButton"
@@ -106,418 +43,33 @@ disabled>
 <div id="map"></div>
 
 <div class="status" id="status">
-🔄 Connecting to Firebase...
+🔄 Connecting Firebase...
 </div>
 
 <div class="info">
-Latitude:
+Latitude :
 <span id="lat">---</span>
 </div>
 
 <div class="info">
-Longitude:
+Longitude :
 <span id="lng">---</span>
 </div>
 
 <div class="info">
-Accuracy:
+Accuracy :
 <span id="accuracy">---</span>
 </div>
 
 <div class="info">
-Last Update:
+Last Update :
 <span id="time">---</span>
 </div>
 
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-
-<script type="module">
-
-import {
-initializeApp
-}
-from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-
-import {
-getDatabase,
-ref,
-set,
-push
-}
-from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-
-import {
-getAuth,
-signInAnonymously
-}
-from
-"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-
-const firebaseConfig = {
-
-apiKey:
-"AIzaSyC_iYK2KfWtLqDy2rcGeyWR6M1RfGosGpw",
-
-authDomain:
-"my-mobile-live-location.firebaseapp.com",
-
-databaseURL:
-"https://my-mobile-live-location-default-rtdb.firebaseio.com",
-
-projectId:
-"my-mobile-live-location",
-
-storageBucket:
-"my-mobile-live-location.firebasestorage.app",
-
-messagingSenderId:
-"1001346063788",
-
-appId:
-"1:1001346063788:web:7c4f0d45b03bf2d6b86e09",
-
-measurementId:
-"G-E40PJX034X"
-
-};
-
-
-const app =
-initializeApp(firebaseConfig);
-
-const database =
-getDatabase(app);
-
-const auth =
-getAuth(app);
-
-
-const map =
-L.map("map").setView(
-[23.8103,90.4125],
-13
-);
-
-
-const normalMap =
-L.tileLayer(
-"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-{
-maxZoom:19,
-attribution:"© OpenStreetMap"
-}
-);
-
-
-const satelliteMap =
-L.tileLayer(
-"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-{
-maxZoom:19,
-attribution:"Tiles © Esri"
-}
-);
-
-
-normalMap.addTo(map);
-
-
-L.control.layers({
-
-"🗺️ Normal": normalMap,
-
-"🛰️ Satellite": satelliteMap
-
-}).addTo(map);
-
-
-let marker = null;
-
-let authenticated = false;
-
-
-signInAnonymously(auth)
-
-.then(() => {
-
-authenticated = true;
-
-document.getElementById(
-"startButton"
-).disabled = false;
-
-document.getElementById(
-"startButton"
-).innerText =
-"📍 START TRACKING";
-
-document.getElementById(
-"status"
-).innerText =
-"🟢 Ready";
-
-})
-
-
-.catch((error) => {
-
-console.error(error);
-
-document.getElementById(
-"status"
-).innerText =
-"❌ Firebase authentication failed";
-
-});
-
-
-window.startTracking = function() {
-
-
-if (!authenticated) {
-
-alert(
-"Please wait for Firebase connection."
-);
-
-return;
-
-}
-
-
-const deviceId =
-document.getElementById(
-"deviceId"
-).value.trim();
-
-
-if (!deviceId) {
-
-alert(
-"Enter a Tracking ID."
-);
-
-return;
-
-}
-
-
-if (!navigator.geolocation) {
-
-alert(
-"GPS is not supported."
-);
-
-return;
-
-}
-
-
-document.getElementById(
-"startButton"
-).disabled = true;
-
-
-document.getElementById(
-"startButton"
-).innerText =
-"🟢 TRACKING ACTIVE";
-
-
-document.getElementById(
-"status"
-).innerText =
-"🟢 LIVE TRACKING";
-
-
-navigator.geolocation.watchPosition(
-
-async(position) => {
-
-
-const latitude =
-position.coords.latitude;
-
-
-const longitude =
-position.coords.longitude;
-
-
-const accuracy =
-position.coords.accuracy;
-
-
-const timestamp =
-Date.now();
-
-
-document.getElementById(
-"lat"
-).innerText =
-latitude.toFixed(6);
-
-
-document.getElementById(
-"lng"
-).innerText =
-longitude.toFixed(6);
-
-
-document.getElementById(
-"accuracy"
-).innerText =
-Math.round(accuracy) +
-" meters";
-
-
-document.getElementById(
-"time"
-).innerText =
-new Date(timestamp)
-.toLocaleTimeString();
-
-
-if (marker) {
-
-marker.setLatLng([
-latitude,
-longitude
-]);
-
-}
-
-else {
-
-marker =
-L.marker([
-latitude,
-longitude
-])
-.addTo(map);
-
-}
-
-
-map.setView(
-[
-latitude,
-longitude
-],
-17
-);
-
-
-/* ==========================
-   CURRENT LOCATION
-========================== */
-
-try {
-
-await set(
-
-ref(
-database,
-"locations/" + deviceId
-),
-
-{
-
-latitude:
-latitude,
-
-longitude:
-longitude,
-
-accuracy:
-accuracy,
-
-timestamp:
-timestamp
-
-}
-
-);
-
-
-/* ==========================
-   SAVE ROUTE POINT
-========================== */
-
-const routeRef =
-push(
-ref(
-database,
-"routes/" + deviceId
-)
-);
-
-
-await set(
-routeRef,
-{
-
-latitude:
-latitude,
-
-longitude:
-longitude,
-
-timestamp:
-timestamp
-
-}
-);
-
-
-}
-
-catch(error) {
-
-console.error(error);
-
-document.getElementById(
-"status"
-).innerText =
-"❌ Firebase upload failed";
-
-}
-
-},
-
-
-(error) => {
-
-document.getElementById(
-"status"
-).innerText =
-"❌ GPS Error: " +
-error.message;
-
-},
-
-
-{
-
-enableHighAccuracy:true,
-
-maximumAge:0,
-
-timeout:10000
-
-}
-
-);
-
-};
-
-</script>
+<script type="module" src="./js/tracker.js"></script>
 
 </body>
+
 </html>
