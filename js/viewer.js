@@ -9,14 +9,11 @@ import {
 
 console.log("👀 Viewer Started");
 
-const loggedIn = await loginAnonymous();
+const ok = await loginAnonymous();
 
-if (!loggedIn) {
-
-    alert("Firebase Connection Failed");
-
+if (!ok) {
+    alert("Firebase Login Failed");
     throw new Error("Firebase Login Failed");
-
 }
 
 createMap();
@@ -27,48 +24,47 @@ const status = document.getElementById("status");
 viewButton.disabled = false;
 viewButton.innerText = "👀 VIEW LIVE LOCATION";
 
+let locationListener = null;
+let routeListener = null;
+
 window.startViewer = function () {
 
     const deviceId = document.getElementById("deviceId").value.trim();
 
     if (!deviceId) {
-
-        alert("Tracking ID Required");
-
+        alert("Please Enter Tracking ID");
         return;
-
     }
 
     viewButton.disabled = true;
     viewButton.innerText = "🟢 WATCHING";
-
     status.innerText = "🔄 Connecting...";
 
+    if (locationListener) locationListener();
+    if (routeListener) routeListener();
+
     // Live Location
-
-    onValue(
-
+    locationListener = onValue(
         ref(database, "locations/" + deviceId),
-
         (snapshot) => {
+
+            if (!snapshot.exists()) {
+                status.innerText = "❌ No Location Found";
+                return;
+            }
 
             const data = snapshot.val();
 
-            if (!data) {
-
-                status.innerText = "❌ No Live Location";
-
-                return;
-
-            }
-
-            updateMarker(data.latitude, data.longitude);
+            updateMarker(
+                Number(data.latitude),
+                Number(data.longitude)
+            );
 
             document.getElementById("lat").innerText =
-                data.latitude.toFixed(6);
+                Number(data.latitude).toFixed(6);
 
             document.getElementById("lng").innerText =
-                data.longitude.toFixed(6);
+                Number(data.longitude).toFixed(6);
 
             document.getElementById("accuracy").innerText =
                 formatAccuracy(data.accuracy);
@@ -76,47 +72,41 @@ window.startViewer = function () {
             document.getElementById("time").innerText =
                 formatTime(data.timestamp);
 
-            status.innerText = "🟢 Live";
-
+            status.innerText = "🟢 LIVE";
         }
-
     );
 
     // Route History
-
-    onValue(
-
+    routeListener = onValue(
         ref(database, "routes/" + deviceId),
-
         (snapshot) => {
 
-            const data = snapshot.val();
+            if (!snapshot.exists()) return;
 
-            if (!data) return;
+            const points = [];
 
-            const points = Object.values(data)
+            Object.values(snapshot.val())
                 .sort((a, b) => a.timestamp - b.timestamp)
-                .map(item => [
-                    item.latitude,
-                    item.longitude
-                ]);
+                .forEach(item => {
+
+                    points.push([
+                        Number(item.latitude),
+                        Number(item.longitude)
+                    ]);
+
+                });
 
             drawRoute(points);
 
         }
-
     );
 
 };
 
 window.addEventListener("online", () => {
-
-    console.log("🌐 Internet Connected");
-
+    status.innerText = "🟢 Internet Connected";
 });
 
 window.addEventListener("offline", () => {
-
-    console.log("❌ Internet Disconnected");
-
+    status.innerText = "🔴 Internet Disconnected";
 });
