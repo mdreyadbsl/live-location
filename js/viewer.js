@@ -28,7 +28,7 @@ let locationListener = null;
 let routeListener = null;
 
 window.startViewer = function () {
-
+console.log("startViewer clicked");
     const deviceId = document.getElementById("deviceId").value.trim();
 
     if (!deviceId) {
@@ -44,6 +44,8 @@ window.startViewer = function () {
     if (routeListener) routeListener();
 
     // Live Location
+
+    console.log("Listening Firebase...");
     locationListener = onValue(
         ref(database, "locations/" + deviceId),
         (snapshot) => {
@@ -54,6 +56,8 @@ window.startViewer = function () {
             }
 
             const data = snapshot.val();
+
+            console.log("Firebase Data:", data);
 
             updateMarker(
                 Number(data.latitude),
