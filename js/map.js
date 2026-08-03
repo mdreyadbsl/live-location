@@ -6,40 +6,25 @@ export let routeLine = null;
 
 export function createMap(divId = "map") {
 
-    if (map) {
-        return map;
-    }
-
+    // Normal Map
     const normalLayer = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
-            maxZoom: 19,
+            maxZoom: 22,
             attribution: "© OpenStreetMap"
         }
     );
 
+    // MapTiler Satellite Hybrid (Satellite + Road Names)
     const satelliteLayer = L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    {
-        maxZoom: 20,
-        attribution: "Tiles © Esri"
-    }
-);
-
-// Road / Place Labels
-const labelLayer = L.tileLayer(
-    "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-    {
-        maxZoom: 20,
-        attribution: "© Esri Labels"
-    }
-);
-
-// Satellite + Labels
-const satelliteWithLabels = L.layerGroup([
-    satelliteLayer,
-    labelLayer
-]);
+        "https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=FNOXfPmFuTaJ024ghSqw",
+        {
+            tileSize: 512,
+            zoomOffset: -1,
+            maxZoom: 22,
+            attribution: "&copy; MapTiler &copy; OpenStreetMap"
+        }
+    );
 
     map = L.map(divId, {
         center: [23.8103, 90.4125],
@@ -48,16 +33,14 @@ const satelliteWithLabels = L.layerGroup([
     });
 
     L.control.layers({
-    "🗺 Normal": normalLayer,
-    "🛰 Satellite + Roads": satelliteWithLabels
-}).addTo(map);
+        "🗺 Normal": normalLayer,
+        "🛰 Satellite + Roads": satelliteLayer
+    }).addTo(map);
 
     return map;
 }
 
 export function updateMarker(lat, lng) {
-
-    if (!map) return;
 
     if (marker) {
 
@@ -70,12 +53,11 @@ export function updateMarker(lat, lng) {
     }
 
     map.setView([lat, lng], 17);
-
 }
 
 export function drawRoute(points) {
 
-    if (!map || !points || points.length === 0) return;
+    if (!points || points.length === 0) return;
 
     if (routeLine) {
 
@@ -84,8 +66,9 @@ export function drawRoute(points) {
     } else {
 
         routeLine = L.polyline(points, {
+            color: "#2563eb",
             weight: 5,
-            color: "#2563eb"
+            opacity: 0.8
         }).addTo(map);
 
     }
