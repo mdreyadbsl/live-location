@@ -19,12 +19,27 @@ export function createMap(divId = "map") {
     );
 
     const satelliteLayer = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        {
-            maxZoom: 19,
-            attribution: "Tiles © Esri"
-        }
-    );
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {
+        maxZoom: 20,
+        attribution: "Tiles © Esri"
+    }
+);
+
+// Road / Place Labels
+const labelLayer = L.tileLayer(
+    "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+    {
+        maxZoom: 20,
+        attribution: "© Esri Labels"
+    }
+);
+
+// Satellite + Labels
+const satelliteWithLabels = L.layerGroup([
+    satelliteLayer,
+    labelLayer
+]);
 
     map = L.map(divId, {
         center: [23.8103, 90.4125],
@@ -32,12 +47,10 @@ export function createMap(divId = "map") {
         layers: [normalLayer]
     });
 
-    L.control.layers(
-        {
-            "🗺 Normal": normalLayer,
-            "🛰 Satellite": satelliteLayer
-        }
-    ).addTo(map);
+    L.control.layers({
+    "🗺 Normal": normalLayer,
+    "🛰 Satellite + Roads": satelliteWithLabels
+}).addTo(map);
 
     return map;
 }
