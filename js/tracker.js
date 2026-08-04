@@ -5,9 +5,9 @@ import { formatTime, formatAccuracy } from "./utils.js";
 import {
     ref,
     set,
-    push
+    push,
+    update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
 console.log("🚀 Tracker Started");
 
 const loggedIn = await loginAnonymous();
@@ -27,7 +27,16 @@ startButton.innerText = "📍 START TRACKING";
 
 let watchId = null;
 
-window.startTracking = function () {
+let tracking = false;
+let tripStartTime = null;
+
+let tripId = null;
+
+window.startTracking = async function () {
+
+    if (tracking) {
+        return;
+    }
 
     const deviceId = document.getElementById("deviceId").value.trim();
 
@@ -36,6 +45,50 @@ window.startTracking = function () {
         return;
     }
 
+    tracking = true;
+    tripStartTime = Date.now();
+
+    tripId = "TRIP_" + Date.now();
+
+    console.log("Trip ID:", tripId);
+
+    await set(
+        ref(database, "trips/" + deviceId + "/" + tripId + "/info"),
+        {
+            startTime: tripStartTime,
+            endTime: null,
+            status: "RUNNING"
+        }
+    );
+
+    document.getElementById("stopButton").disabled = false;
+
+    if (!navigator.geolocation) {
+        alert("Geolocation Not Supported");
+        return;
+    }
+
+if (!deviceId) {
+    alert("Tracking ID Required");
+    return;
+}
+
+tracking = true;
+tripStartTime = Date.now();
+
+tripId = "TRIP_" + Date.now();
+console.log("Trip ID:", tripId);
+
+await set(
+    ref(database, "trips/" + deviceId + "/" + tripId + "/info"),
+    {
+        startTime: tripStartTime,
+        endTime: null,
+        status: "RUNNING"
+    }
+);
+
+document.getElementById("stopButton").disabled = false;
     if (!navigator.geolocation) {
         alert("Geolocation Not Supported");
         return;
@@ -46,6 +99,8 @@ window.startTracking = function () {
     }
 
     startButton.disabled = true;
+
+    document.getElementById("stopButton").disabled = false;
     startButton.innerText = "🟢 TRACKING ACTIVE";
     status.innerText = "🛰 Waiting GPS...";
 
@@ -80,14 +135,14 @@ window.startTracking = function () {
                 );
 
                 await set(
-                    push(ref(database, "routes/" + deviceId)),
-                    {
-                        latitude: lat,
-                        longitude: lng,
-                        accuracy: accuracy,
-                        timestamp: timestamp
-                    }
-                );
+    push(ref(database, "trips/" + deviceId + "/" + tripId + "/points")),
+    {
+        latitude: lat,
+        longitude: lng,
+        accuracy,
+        timestamp
+    }
+);
 
             } catch (error) {
 
@@ -123,3 +178,35 @@ window.addEventListener("online", () => {
 window.addEventListener("offline", () => {
     status.innerText = "🔴 Internet Disconnected";
 });
+window.stopTracking = function () {
+
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+
+    tracking = false;
+
+    startButton.disabled = false;
+    startButton.innerText = "📍 START TRACKING";
+
+    document.getElementById("stopButton").disabled = true;
+
+    const deviceId = document.getElementById("deviceId").value.trim();
+
+if (tripId) {
+
+    update(
+        ref(database, "trips/" + deviceId + "/" + tripId + "/info"),
+        {
+            endTime: Date.now(),
+            status: "FINISHED"
+        }
+    );
+
+}
+
+    status.innerText = "⏹ Tracking Stopped";
+
+    console.log("Trip End");
+};

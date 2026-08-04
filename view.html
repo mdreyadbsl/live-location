@@ -41,7 +41,49 @@ disabled>
 </div>
 
 <div id="map"></div>
+<div class="container">
 
+<h3>📋 Trip History</h3>
+
+<div id="tripList">
+
+No Trips
+
+</div>
+
+<hr>
+
+<div id="tripInfo">
+
+<b>Trip Information</b>
+
+<hr>
+
+<button
+id="playRouteButton"
+onclick="playRoute()"
+style="
+width:100%;
+padding:14px;
+border:none;
+border-radius:8px;
+background:#16a34a;
+color:white;
+font-size:16px;">
+
+▶ PLAY ROUTE
+
+</button>
+
+<p>📏 Distance : <span id="tripDistance">0 km</span></p>
+
+<p>⏱ Duration : <span id="tripDuration">0 min</span></p>
+
+<p>📍 GPS Points : <span id="tripPoints">0</span></p>
+
+</div>
+
+</div>
 <div class="status" id="status">
 🔄 Connecting Firebase...
 </div>

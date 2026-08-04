@@ -3,6 +3,8 @@
 export let map = null;
 export let marker = null;
 export let routeLine = null;
+export let startMarker = null;
+export let endMarker = null;
 
 export function createMap(divId = "map") {
 
@@ -15,7 +17,7 @@ export function createMap(divId = "map") {
         }
     );
 
-    // MapTiler Satellite Hybrid (Satellite + Road Names)
+    // Satellite + Road Names
     const satelliteLayer = L.tileLayer(
         "https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=FNOXfPmFuTaJ024ghSqw",
         {
@@ -40,6 +42,10 @@ export function createMap(divId = "map") {
     return map;
 }
 
+// ==============================
+// Live Marker
+// ==============================
+
 export function updateMarker(lat, lng) {
 
     if (marker) {
@@ -53,7 +59,12 @@ export function updateMarker(lat, lng) {
     }
 
     map.setView([lat, lng], 17);
+
 }
+
+// ==============================
+// Draw Route
+// ==============================
 
 export function drawRoute(points) {
 
@@ -72,5 +83,31 @@ export function drawRoute(points) {
         }).addTo(map);
 
     }
+
+}
+
+// ==============================
+// Start / End Marker
+// ==============================
+
+export function showStartEndMarkers(points) {
+
+    if (!points || points.length === 0) return;
+
+    if (startMarker) {
+        map.removeLayer(startMarker);
+    }
+
+    if (endMarker) {
+        map.removeLayer(endMarker);
+    }
+
+    startMarker = L.marker(points[0])
+        .addTo(map)
+        .bindPopup("🟢 Trip Start");
+
+    endMarker = L.marker(points[points.length - 1])
+        .addTo(map)
+        .bindPopup("🔴 Trip End");
 
 }
