@@ -17,14 +17,12 @@ export function createMap(divId = "map") {
         }
     );
 
-    // Satellite + Road Names
+    // Pure Satellite (Esri World Imagery)
     const satelliteLayer = L.tileLayer(
-        "https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=FNOXfPmFuTaJ024ghSqw",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
-            tileSize: 512,
-            zoomOffset: -1,
             maxZoom: 22,
-            attribution: "&copy; MapTiler &copy; OpenStreetMap"
+            attribution: "&copy; Esri"
         }
     );
 
@@ -34,17 +32,16 @@ export function createMap(divId = "map") {
         layers: [normalLayer]
     });
 
-    L.control.layers({
-        "🗺 Normal": normalLayer,
-        "🛰 Satellite + Roads": satelliteLayer
-    }).addTo(map);
+    // Layer Switch
+    L.control.layers(
+        {
+            "🗺 Normal": normalLayer,
+            "🛰 Satellite": satelliteLayer
+        }
+    ).addTo(map);
 
     return map;
 }
-
-// ==============================
-// Live Marker
-// ==============================
 
 export function updateMarker(lat, lng) {
 
@@ -61,10 +58,6 @@ export function updateMarker(lat, lng) {
     map.setView([lat, lng], 17);
 
 }
-
-// ==============================
-// Draw Route
-// ==============================
 
 export function drawRoute(points) {
 
@@ -85,10 +78,6 @@ export function drawRoute(points) {
     }
 
 }
-
-// ==============================
-// Start / End Marker
-// ==============================
 
 export function showStartEndMarkers(points) {
 
