@@ -2,13 +2,19 @@ import { loginAnonymous, database } from "./firebase.js";
 import { createMap, updateMarker } from "./map.js";
 import { formatTime, formatAccuracy } from "./utils.js";
 
+import { cleanupOldTrips } from "./cleanup.js";
+
 import {
     ref,
     set,
     push,
     update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-console.log("🚀 Tracker Started");
+alert("tracker.js loaded");
+
+
+alert("NEW tracker.js");
+console.log("🚀 Tracker Started V2");
 
 const loggedIn = await loginAnonymous();
 
@@ -41,10 +47,11 @@ window.startTracking = async function () {
     const deviceId = document.getElementById("deviceId").value.trim();
 
     if (!deviceId) {
+        
         alert("Tracking ID Required");
         return;
     }
-
+await cleanupOldTrips(deviceId);
     tracking = true;
     tripStartTime = Date.now();
 
