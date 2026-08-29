@@ -57,11 +57,16 @@ createMap();
 // UI Elements
 // ==========================
 
-const viewButton = document.getElementById("viewButton");
-const status = document.getElementById("status");
+const viewButton =
+    document.getElementById("viewButton");
+
+const status =
+    document.getElementById("status");
 
 viewButton.disabled = false;
-viewButton.innerText = "👀 VIEW LIVE LOCATION";
+
+viewButton.innerText =
+    "👀 VIEW LIVE LOCATION";
 
 // ==========================
 // Start Viewer
@@ -69,10 +74,11 @@ viewButton.innerText = "👀 VIEW LIVE LOCATION";
 
 window.startViewer = function () {
 
-    const deviceId = document
-        .getElementById("deviceId")
-        .value
-        .trim();
+    const deviceId =
+        document
+            .getElementById("deviceId")
+            .value
+            .trim();
 
     if (!deviceId) {
 
@@ -85,107 +91,183 @@ window.startViewer = function () {
     loadTrips(deviceId);
 
     viewButton.disabled = true;
-    viewButton.innerText = "🟢 WATCHING";
 
-    status.innerText = "🔄 Connecting...";
+    viewButton.innerText =
+        "🟢 WATCHING";
 
-    if (locationListener) locationListener();
+    status.innerText =
+        "🔄 Connecting...";
 
-    if (routeListener) routeListener();
+    if (locationListener) {
 
-    // Live Location
+        locationListener();
+
+    }
+
+    if (routeListener) {
+
+        routeListener();
+
+    }
+
+    // ==========================
+    // LIVE LOCATION
+    // ==========================
 
     locationListener = onValue(
 
-        ref(database, "locations/" + deviceId),
+        ref(
+            database,
+            "locations/" + deviceId
+        ),
 
         (snapshot) => {
 
             if (!snapshot.exists()) {
 
-                status.innerText = "❌ No Live Location";
+                status.innerText =
+                    "❌ No Live Location";
 
                 return;
 
             }
 
-            const data = snapshot.val();
+            const data =
+                snapshot.val();
+
+            const lat =
+                Number(data.latitude);
+
+            const lng =
+                Number(data.longitude);
+
+            const accuracy =
+                Number(data.accuracy);
+
+            const speed =
+                Number(data.speed || 0);
+
+            // ==========================
+            // UPDATE MAP + SPEED
+            // ==========================
 
             updateMarker(
-
-                Number(data.latitude),
-
-                Number(data.longitude)
-
+                lat,
+                lng,
+                speed
             );
 
-            document.getElementById("lat").innerText =
-                Number(data.latitude).toFixed(6);
+            // ==========================
+            // UPDATE UI
+            // ==========================
 
-            document.getElementById("lng").innerText =
-                Number(data.longitude).toFixed(6);
+            document.getElementById("lat")
+                .innerText =
+                lat.toFixed(6);
 
-            document.getElementById("accuracy").innerText =
-                formatAccuracy(data.accuracy);
+            document.getElementById("lng")
+                .innerText =
+                lng.toFixed(6);
 
-            document.getElementById("time").innerText =
+            document.getElementById("accuracy")
+                .innerText =
+                formatAccuracy(accuracy);
+
+            document.getElementById("speed")
+                .innerText =
+                speed.toFixed(1) +
+                " km/h";
+
+            document.getElementById("time")
+                .innerText =
                 formatTime(data.timestamp);
 
-            status.innerText = "🟢 LIVE";
+            status.innerText =
+                "🟢 LIVE";
 
         }
 
     );
 
 };
+
 // ==========================
 // Load Trip History
 // ==========================
 
 async function loadTrips(deviceId) {
 
-    const tripRef = ref(database, "trips/" + deviceId);
+    const tripRef =
+        ref(
+            database,
+            "trips/" + deviceId
+        );
 
-    const snapshot = await get(tripRef);
+    const snapshot =
+        await get(tripRef);
 
-    const tripList = document.getElementById("tripList");
+    const tripList =
+        document.getElementById("tripList");
 
     tripList.innerHTML = "";
 
     if (!snapshot.exists()) {
 
-        tripList.innerHTML = "<p>No Trips Found</p>";
+        tripList.innerHTML =
+            "<p>No Trips Found</p>";
 
         return;
 
     }
 
-    const trips = snapshot.val();
+    const trips =
+        snapshot.val();
 
-    const tripKeys = Object.keys(trips).reverse();
+    const tripKeys =
+        Object.keys(trips).reverse();
 
     tripKeys.forEach((tripId) => {
 
-        const info = trips[tripId].info || {};
+        const info =
+            trips[tripId].info || {};
 
-        const startTime = info.startTime
-            ? new Date(info.startTime).toLocaleString()
-            : "Unknown";
+        const startTime =
+            info.startTime
+                ? new Date(
+                    info.startTime
+                ).toLocaleString()
+                : "Unknown";
 
-        const endTime = info.endTime
-            ? new Date(info.endTime).toLocaleString()
-            : "Running";
+        const endTime =
+            info.endTime
+                ? new Date(
+                    info.endTime
+                ).toLocaleString()
+                : "Running";
 
-        const card = document.createElement("div");
+        const card =
+            document.createElement("div");
 
-        card.className = "trip-card";
+        card.className =
+            "trip-card";
 
-        card.style.padding = "12px";
-        card.style.marginBottom = "10px";
-        card.style.border = "1px solid #ddd";
-        card.style.borderRadius = "10px";
-        card.style.cursor = "pointer";
-        card.style.background = "#ffffff";
+        card.style.padding =
+            "12px";
+
+        card.style.marginBottom =
+            "10px";
+
+        card.style.border =
+            "1px solid #ddd";
+
+        card.style.borderRadius =
+            "10px";
+
+        card.style.cursor =
+            "pointer";
+
+        card.style.background =
+            "#ffffff";
 
         card.innerHTML = `
             <b>${tripId}</b><br>
@@ -195,7 +277,10 @@ async function loadTrips(deviceId) {
 
         card.onclick = () => {
 
-            showTrip(deviceId, tripId);
+            showTrip(
+                deviceId,
+                tripId
+            );
 
         };
 
@@ -209,14 +294,23 @@ async function loadTrips(deviceId) {
 // Show Selected Trip
 // ==========================
 
-async function showTrip(deviceId, tripId) {
+async function showTrip(
+    deviceId,
+    tripId
+) {
 
-    const tripRef = ref(
-        database,
-        "trips/" + deviceId + "/" + tripId + "/points"
-    );
+    const tripRef =
+        ref(
+            database,
+            "trips/" +
+            deviceId +
+            "/" +
+            tripId +
+            "/points"
+        );
 
-    const snapshot = await get(tripRef);
+    const snapshot =
+        await get(tripRef);
 
     if (!snapshot.exists()) {
 
@@ -226,18 +320,33 @@ async function showTrip(deviceId, tripId) {
 
     }
 
-    const rawPoints = Object.values(snapshot.val())
-        .sort((a, b) => a.timestamp - b.timestamp);
+    const rawPoints =
+        Object.values(
+            snapshot.val()
+        )
+        .sort(
+            (a, b) =>
+                a.timestamp -
+                b.timestamp
+        );
 
-    const points = rawPoints.map(item => [
-        Number(item.latitude),
-        Number(item.longitude)
-    ]);
+    const points =
+        rawPoints.map(item => [
 
-    replayPoints = points;
+            Number(item.latitude),
+
+            Number(item.longitude)
+
+        ]);
+
+    replayPoints =
+        points;
+
     replayIndex = 0;
 
-    updateTripStatistics(rawPoints);
+    updateTripStatistics(
+        rawPoints
+    );
 
     drawRoute(points);
 
@@ -245,29 +354,73 @@ async function showTrip(deviceId, tripId) {
 
     if (points.length > 0) {
 
+        const lastPoint =
+            rawPoints[
+                rawPoints.length - 1
+            ];
+
+        const lastSpeed =
+            Number(
+                lastPoint.speed || 0
+            );
+
         updateMarker(
-            points[points.length - 1][0],
-            points[points.length - 1][1]
+
+            points[
+                points.length - 1
+            ][0],
+
+            points[
+                points.length - 1
+            ][1],
+
+            lastSpeed
+
         );
 
-        map.fitBounds(points, {
-            padding: [40, 40]
-        });
+        document.getElementById("speed")
+            .innerText =
+            lastSpeed.toFixed(1) +
+            " km/h";
+
+        map.fitBounds(
+            points,
+            {
+                padding: [40, 40]
+            }
+        );
 
     }
+
 }
 
 // ==========================
 // Trip Statistics
 // ==========================
 
-function updateTripStatistics(rawPoints) {
+function updateTripStatistics(
+    rawPoints
+) {
 
-    if (!rawPoints || rawPoints.length < 2) {
+    if (
+        !rawPoints ||
+        rawPoints.length < 2
+    ) {
 
-        document.getElementById("tripDistance").innerText = "0 km";
-        document.getElementById("tripDuration").innerText = "0 min";
-        document.getElementById("tripPoints").innerText = "0";
+        document.getElementById(
+            "tripDistance"
+        ).innerText =
+            "0 km";
+
+        document.getElementById(
+            "tripDuration"
+        ).innerText =
+            "0 min";
+
+        document.getElementById(
+            "tripPoints"
+        ).innerText =
+            "0";
 
         return;
 
@@ -275,31 +428,53 @@ function updateTripStatistics(rawPoints) {
 
     let distance = 0;
 
-    for (let i = 1; i < rawPoints.length; i++) {
+    for (
+        let i = 1;
+        i < rawPoints.length;
+        i++
+    ) {
 
-        distance += calculateDistance(
+        distance +=
+            calculateDistance(
 
-            rawPoints[i - 1].latitude,
-            rawPoints[i - 1].longitude,
+                rawPoints[i - 1].latitude,
 
-            rawPoints[i].latitude,
-            rawPoints[i].longitude
+                rawPoints[i - 1].longitude,
 
-        );
+                rawPoints[i].latitude,
+
+                rawPoints[i].longitude
+
+            );
 
     }
 
     const duration =
-        (rawPoints[rawPoints.length - 1].timestamp -
-            rawPoints[0].timestamp) / 1000 / 60;
+        (
+            rawPoints[
+                rawPoints.length - 1
+            ].timestamp -
 
-    document.getElementById("tripDistance").innerText =
-        (distance / 1000).toFixed(2) + " km";
+            rawPoints[0].timestamp
 
-    document.getElementById("tripDuration").innerText =
-        duration.toFixed(1) + " min";
+        ) / 1000 / 60;
 
-    document.getElementById("tripPoints").innerText =
+    document.getElementById(
+        "tripDistance"
+    ).innerText =
+        (distance / 1000)
+            .toFixed(2) +
+        " km";
+
+    document.getElementById(
+        "tripDuration"
+    ).innerText =
+        duration.toFixed(1) +
+        " min";
+
+    document.getElementById(
+        "tripPoints"
+    ).innerText =
         rawPoints.length;
 
 }
@@ -310,7 +485,9 @@ function updateTripStatistics(rawPoints) {
 
 window.playRoute = function () {
 
-    if (replayPoints.length === 0) {
+    if (
+        replayPoints.length === 0
+    ) {
 
         alert("No Route Loaded");
 
@@ -320,33 +497,47 @@ window.playRoute = function () {
 
     if (replayTimer) {
 
-        clearInterval(replayTimer);
+        clearInterval(
+            replayTimer
+        );
 
     }
 
     replayIndex = 0;
 
-    replayTimer = setInterval(() => {
+    replayTimer =
+        setInterval(() => {
 
-        if (replayIndex >= replayPoints.length) {
+            if (
+                replayIndex >=
+                replayPoints.length
+            ) {
 
-            clearInterval(replayTimer);
+                clearInterval(
+                    replayTimer
+                );
 
-            replayTimer = null;
+                replayTimer = null;
 
-            return;
+                return;
 
-        }
+            }
 
-        const point = replayPoints[replayIndex];
+            const point =
+                replayPoints[
+                    replayIndex
+                ];
 
-        updateMarker(point[0], point[1]);
+            updateMarker(
+                point[0],
+                point[1]
+            );
 
-        map.panTo(point);
+            map.panTo(point);
 
-        replayIndex++;
+            replayIndex++;
 
-    }, 300);
+        }, 300);
 
 };
 
@@ -358,7 +549,9 @@ window.stopReplay = function () {
 
     if (replayTimer) {
 
-        clearInterval(replayTimer);
+        clearInterval(
+            replayTimer
+        );
 
         replayTimer = null;
 
@@ -382,42 +575,57 @@ window.restartReplay = function () {
 // Network Status
 // ==========================
 
-window.addEventListener("online", () => {
+window.addEventListener(
+    "online",
+    () => {
 
-    status.innerText = "🟢 Internet Connected";
+        status.innerText =
+            "🟢 Internet Connected";
 
-});
+    }
+);
 
-window.addEventListener("offline", () => {
+window.addEventListener(
+    "offline",
+    () => {
 
-    status.innerText = "🔴 Internet Disconnected";
+        status.innerText =
+            "🔴 Internet Disconnected";
 
-});
+    }
+);
 
 // ==========================
 // Cleanup
 // ==========================
 
-window.addEventListener("beforeunload", () => {
+window.addEventListener(
+    "beforeunload",
+    () => {
 
-    if (locationListener) {
+        if (locationListener) {
 
-        locationListener();
+            locationListener();
+
+        }
+
+        if (routeListener) {
+
+            routeListener();
+
+        }
+
+        if (replayTimer) {
+
+            clearInterval(
+                replayTimer
+            );
+
+        }
 
     }
+);
 
-    if (routeListener) {
-
-        routeListener();
-
-    }
-
-    if (replayTimer) {
-
-        clearInterval(replayTimer);
-
-    }
-
-});
-
-console.log("✅ Viewer V3 Loaded Successfully");
+console.log(
+    "✅ Viewer V4 Loaded Successfully"
+);
