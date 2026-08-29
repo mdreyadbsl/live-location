@@ -17,7 +17,7 @@ export function createMap(divId = "map") {
         }
     );
 
-    // Pure Satellite (Esri World Imagery)
+    // Pure Satellite
     const satelliteLayer = L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
@@ -32,7 +32,7 @@ export function createMap(divId = "map") {
         layers: [normalLayer]
     });
 
-    // Layer Switch
+    // Map Layer Switch
     L.control.layers(
         {
             "🗺 Normal": normalLayer,
@@ -43,25 +43,54 @@ export function createMap(divId = "map") {
     return map;
 }
 
-export function updateMarker(lat, lng) {
+
+// ========================================
+// UPDATE LIVE MARKER + SPEED
+// ========================================
+
+export function updateMarker(lat, lng, speed = 0) {
+
+    const speedText =
+        Number(speed).toFixed(1) + " km/h";
 
     if (marker) {
 
         marker.setLatLng([lat, lng]);
 
+        // Update Speed Label
+        marker.setTooltipContent(
+            "🚗 " + speedText
+        );
+
     } else {
 
-        marker = L.marker([lat, lng]).addTo(map);
+        marker = L.marker([lat, lng])
+            .addTo(map)
+            .bindTooltip(
+                "🚗 " + speedText,
+                {
+                    permanent: true,
+                    direction: "top",
+                    offset: [0, -35],
+                    className: "speed-tooltip"
+                }
+            );
 
     }
 
     map.setView([lat, lng], 17);
-
 }
+
+
+// ========================================
+// DRAW ROUTE
+// ========================================
 
 export function drawRoute(points) {
 
-    if (!points || points.length === 0) return;
+    if (!points || points.length === 0) {
+        return;
+    }
 
     if (routeLine) {
 
@@ -79,9 +108,16 @@ export function drawRoute(points) {
 
 }
 
+
+// ========================================
+// START & END MARKERS
+// ========================================
+
 export function showStartEndMarkers(points) {
 
-    if (!points || points.length === 0) return;
+    if (!points || points.length === 0) {
+        return;
+    }
 
     if (startMarker) {
         map.removeLayer(startMarker);
@@ -95,7 +131,9 @@ export function showStartEndMarkers(points) {
         .addTo(map)
         .bindPopup("🟢 Trip Start");
 
-    endMarker = L.marker(points[points.length - 1])
+    endMarker = L.marker(
+        points[points.length - 1]
+    )
         .addTo(map)
         .bindPopup("🔴 Trip End");
 

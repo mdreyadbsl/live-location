@@ -8,77 +8,94 @@
 
 <title>Live Location Tracker</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="./css/style.css">
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+>
+
+<link
+    rel="stylesheet"
+    href="./css/style.css"
+>
 
 </head>
 
 <body>
 
 <header>
-📍 LIVE TRACKER
+    📍 LIVE TRACKER
 </header>
 
 <div class="container">
 
-<label>Tracking ID</label>
+    <label>Tracking ID</label>
 
-<input
-id="deviceId"
-type="text"
-value="REYAD001"
-placeholder="Example : REYAD001">
+    <input
+        id="deviceId"
+        type="text"
+        value="REYAD001"
+        placeholder="Example : REYAD001"
+    >
 
-<button
-id="startButton"
-onclick="startTracking()"
-disabled>
+    <button
+        id="startButton"
+        onclick="startTracking()"
+        disabled
+    >
+        ⏳ Connecting...
+    </button>
 
-⏳ Connecting...
+    <br><br>
 
-</button>
-<br><br>
-
-<button
-id="stopButton"
-onclick="stopTracking()"
-disabled>
-
-⏹ STOP TRACKING
-
-</button>
+    <button
+        id="stopButton"
+        onclick="stopTracking()"
+        disabled
+    >
+        ⏹ STOP TRACKING
+    </button>
 
 </div>
 
 <div id="map"></div>
 
 <div class="status" id="status">
-🔄 Connecting Firebase...
+    🔄 Connecting Firebase...
 </div>
 
 <div class="info">
-Latitude :
-<span id="lat">---</span>
+    Latitude :
+    <span id="lat">---</span>
 </div>
 
 <div class="info">
-Longitude :
-<span id="lng">---</span>
+    Longitude :
+    <span id="lng">---</span>
 </div>
 
 <div class="info">
-Accuracy :
-<span id="accuracy">---</span>
+    Accuracy :
+    <span id="accuracy">---</span>
 </div>
 
 <div class="info">
-Last Update :
-<span id="time">---</span>
+    🚗 Live Speed :
+    <span id="speed">0.0 km/h</span>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div class="info">
+    Last Update :
+    <span id="time">---</span>
+</div>
 
-<script type="module" src="./js/tracker.js"></script>
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script
+    type="module"
+    src="./js/tracker.js">
+</script>
 
 </body>
 
