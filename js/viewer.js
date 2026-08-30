@@ -298,6 +298,10 @@ async function loadTrips(deviceId) {
 // Show Selected Trip - V4
 // ==========================
 
+// ==========================
+// Show Selected Trip
+// ==========================
+
 async function showTrip(deviceId, tripId) {
 
     const tripRef = ref(
@@ -310,205 +314,70 @@ async function showTrip(deviceId, tripId) {
     if (!snapshot.exists()) {
 
         alert("No Route Found");
-
         return;
 
     }
-
-    // ==========================
-    // Get GPS Points
-    // ==========================
 
     const rawPoints = Object.values(snapshot.val())
         .sort((a, b) => a.timestamp - b.timestamp);
 
+    if (rawPoints.length === 0) {
 
-    // ==========================
-    // Remove Invalid Points
-    // ==========================
-
-    const validPoints = rawPoints.filter(point => {
-
-        return (
-            Number.isFinite(Number(point.latitude)) &&
-            Number.isFinite(Number(point.longitude))
-        );
-
-    });
-
-
-    if (validPoints.length === 0) {
-
-        alert("No Valid GPS Points");
-
+        alert("No GPS Points Found");
         return;
 
     }
 
-
-    // ==========================
-    // Convert to Leaflet Points
-    // ==========================
-
-    const points = validPoints.map(point => [
-
-        Number(point.latitude),
-        Number(point.longitude)
-
+    const points = rawPoints.map(item => [
+        Number(item.latitude),
+        Number(item.longitude)
     ]);
 
-
-    // ==========================
-    // Save Replay Points
-    // ==========================
-
+    // Save replay points
     replayPoints = points;
-
     replayIndex = 0;
 
+    // Calculate trip statistics
+    updateTripStatistics(rawPoints);
 
-    // ==========================
-    // Trip Statistics
-    // ==========================
-
-    updateTripStatistics(validPoints);
-
-
-    // ==========================
-    // Draw Route
-    // ==========================
-
-    drawRoute(points);
-
-
-    // ==========================
-    // Start / End Markers
-    // ==========================
-
-    showStartEndMarkers(points);
-
-
-    // ==========================
-    // Show Last Location
-    // ==========================
-
+    // Get last known speed
     const lastPoint =
-        points[points.length - 1];
+        rawPoints[rawPoints.length - 1];
 
+    const lastSpeed =
+        Number(lastPoint.speed) || 0;
 
-    updateMarker(
+    const speedElement =
+        document.getElementById("speed");
 
-        lastPoint[0],
+    if (speedElement) {
 
-        lastPoint[1],
-
-        0
-
-    );
-
-
-    // ==========================
-    // Fit Full Route
-    // ==========================
-
-    if (points.length > 1) {
-
-        map.fitBounds(
-
-            points,
-
-            {
-
-                padding: [50, 50],
-
-                maxZoom: 17
-
-            }
-
-        );
+        speedElement.innerText =
+            lastSpeed.toFixed(1) + " km/h";
 
     }
 
-
-    console.log(
-        "🗺️ Route Loaded:",
-        points.length,
-        "GPS points"
-    );
-
-}
-
-    const rawPoints =
-        Object.values(
-            snapshot.val()
-        )
-        .sort(
-            (a, b) =>
-                a.timestamp -
-                b.timestamp
-        );
-
-    const points =
-        rawPoints.map(item => [
-
-            Number(item.latitude),
-
-            Number(item.longitude)
-
-        ]);
-
-    replayPoints =
-        points;
-
-    replayIndex = 0;
-
-    updateTripStatistics(
-        rawPoints
-    );
-
+    // Draw route
     drawRoute(points);
 
+    // Start & End markers
     showStartEndMarkers(points);
 
-    if (points.length > 0) {
+    // Move marker to last location
+    updateMarker(
+        points[points.length - 1][0],
+        points[points.length - 1][1],
+        lastSpeed
+    );
 
-        const lastPoint =
-            rawPoints[
-                rawPoints.length - 1
-            ];
-
-        const lastSpeed =
-            Number(
-                lastPoint.speed || 0
-            );
-
-        updateMarker(
-
-            points[
-                points.length - 1
-            ][0],
-
-            points[
-                points.length - 1
-            ][1],
-
-            lastSpeed
-
-        );
-
-        document.getElementById("speed")
-            .innerText =
-            lastSpeed.toFixed(1) +
-            " km/h";
-
-        map.fitBounds(
-            points,
-            {
-                padding: [40, 40]
-            }
-        );
-
-    }
+    // Fit complete route
+    map.fitBounds(
+        points,
+        {
+            padding: [40, 40],
+            maxZoom: 17
+        }
+    );
 
 }
 
