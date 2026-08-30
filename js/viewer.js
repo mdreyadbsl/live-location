@@ -294,23 +294,18 @@ async function loadTrips(deviceId) {
 // Show Selected Trip
 // ==========================
 
-async function showTrip(
-    deviceId,
-    tripId
-) {
+// ==========================
+// Show Selected Trip - V4
+// ==========================
 
-    const tripRef =
-        ref(
-            database,
-            "trips/" +
-            deviceId +
-            "/" +
-            tripId +
-            "/points"
-        );
+async function showTrip(deviceId, tripId) {
 
-    const snapshot =
-        await get(tripRef);
+    const tripRef = ref(
+        database,
+        "trips/" + deviceId + "/" + tripId + "/points"
+    );
+
+    const snapshot = await get(tripRef);
 
     if (!snapshot.exists()) {
 
@@ -319,6 +314,129 @@ async function showTrip(
         return;
 
     }
+
+    // ==========================
+    // Get GPS Points
+    // ==========================
+
+    const rawPoints = Object.values(snapshot.val())
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+
+    // ==========================
+    // Remove Invalid Points
+    // ==========================
+
+    const validPoints = rawPoints.filter(point => {
+
+        return (
+            Number.isFinite(Number(point.latitude)) &&
+            Number.isFinite(Number(point.longitude))
+        );
+
+    });
+
+
+    if (validPoints.length === 0) {
+
+        alert("No Valid GPS Points");
+
+        return;
+
+    }
+
+
+    // ==========================
+    // Convert to Leaflet Points
+    // ==========================
+
+    const points = validPoints.map(point => [
+
+        Number(point.latitude),
+        Number(point.longitude)
+
+    ]);
+
+
+    // ==========================
+    // Save Replay Points
+    // ==========================
+
+    replayPoints = points;
+
+    replayIndex = 0;
+
+
+    // ==========================
+    // Trip Statistics
+    // ==========================
+
+    updateTripStatistics(validPoints);
+
+
+    // ==========================
+    // Draw Route
+    // ==========================
+
+    drawRoute(points);
+
+
+    // ==========================
+    // Start / End Markers
+    // ==========================
+
+    showStartEndMarkers(points);
+
+
+    // ==========================
+    // Show Last Location
+    // ==========================
+
+    const lastPoint =
+        points[points.length - 1];
+
+
+    updateMarker(
+
+        lastPoint[0],
+
+        lastPoint[1],
+
+        0
+
+    );
+
+
+    // ==========================
+    // Fit Full Route
+    // ==========================
+
+    if (points.length > 1) {
+
+        map.fitBounds(
+
+            points,
+
+            {
+
+                padding: [50, 50],
+
+                maxZoom: 17
+
+            }
+
+        );
+
+    }
+
+
+    console.log(
+        "🗺️ Route Loaded:",
+        points.length,
+        "GPS points"
+    );
+
+}
 
     const rawPoints =
         Object.values(
