@@ -1,4 +1,7 @@
-import { database } from "./firebase.js";
+// ========================================
+// CLEANUP OLD TRIPS
+// Keep only last 2 days
+// ========================================
 
 import {
     ref,
@@ -6,84 +9,112 @@ import {
     remove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-console.log("🧹 Cleanup Module Loaded");
+import { database } from "./firebase.js";
+
+
+// ========================================
+// CLEANUP FUNCTION
+// ========================================
 
 export async function cleanupOldTrips(deviceId) {
 
+    if (!deviceId) {
+        return;
+    }
+
     try {
 
-        console.log("🧹 Checking old trips...");
+        const tripsRef =
+            ref(
+                database,
+                "trips/" + deviceId
+            );
 
-        const tripsRef = ref(database, "trips/" + deviceId);
-
-        const snapshot = await get(tripsRef);
+        const snapshot =
+            await get(tripsRef);
 
         if (!snapshot.exists()) {
 
-            console.log("✅ No Trips Found");
+            console.log(
+                "🧹 No old trips found"
+            );
 
             return;
-
         }
 
-        const trips = snapshot.val();
 
-        const totalTrips = Object.keys(trips).length;
+        const trips =
+            snapshot.val();
 
-        console.log("📦 Total Trips:", totalTrips);
 
-        // ===== AUTO DELETE AFTER 3 DAYS =====
-        const AUTO_DELETE_AFTER_DAYS = 3;
+        // Keep only 2 days
 
-        const deleteBefore =
-            Date.now() - (AUTO_DELETE_AFTER_DAYS * 24 * 60 * 60 * 1000);
+        const twoDaysAgo =
+            Date.now() -
+            (2 * 24 * 60 * 60 * 1000);
 
-        let deleted = 0;
 
-        for (const tripId of Object.keys(trips)) {
+        let deletedCount = 0;
 
-            const trip = trips[tripId];
 
-            if (!trip.info) continue;
-            if (!trip.info.startTime) continue;
+        // ====================================
+        // CHECK EVERY TRIP
+        // ====================================
 
-            // Never delete active trip
-            if (trip.info.status === "RUNNING") {
+        for (
+            const tripId of Object.keys(trips)
+        ) {
 
-                console.log("🟢 Active:", tripId);
+            const trip =
+                trips[tripId];
 
-                continue;
 
-            }
+            const startTime =
+                trip?.info?.startTime;
 
-            // Delete trips older than 3 days
-            if (trip.info.startTime < deleteBefore) {
+
+            if (
+                startTime &&
+                Number(startTime) < twoDaysAgo
+            ) {
 
                 await remove(
-                    ref(database, `trips/${deviceId}/${tripId}`)
+                    ref(
+                        database,
+                        "trips/" +
+                        deviceId +
+                        "/" +
+                        tripId
+                    )
                 );
 
-                deleted++;
 
-                console.log("🗑 Deleted:", tripId);
+                deletedCount++;
 
-            } else {
 
-                console.log("✅ Keep:", tripId);
+                console.log(
+                    "🗑 Deleted old trip:",
+                    tripId
+                );
 
             }
 
         }
 
-        console.log("================================");
-        console.log("📦 Total Trips :", totalTrips);
-        console.log("🗑 Deleted     :", deleted);
-        console.log("✅ Remaining   :", totalTrips - deleted);
-        console.log("================================");
+
+        console.log(
+            "🧹 Cleanup completed.",
+            deletedCount,
+            "old trip(s) deleted."
+        );
+
 
     } catch (error) {
 
-        console.error("❌ Cleanup Error:", error);
+        console.error(
+            "❌ Cleanup failed:",
+            error
+        );
 
     }
 
