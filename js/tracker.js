@@ -1,6 +1,16 @@
 import { loginAnonymous, database } from "./firebase.js";
-import { createMap, updateMarker } from "./map.js";
-import { formatTime, formatAccuracy } from "./utils.js";
+
+import {
+    createMap,
+    updateMarker,
+    drawRoute
+} from "./map.js";
+
+import {
+    formatTime,
+    formatAccuracy
+} from "./utils.js";
+
 import { cleanupOldTrips } from "./cleanup.js";
 
 import {
@@ -10,368 +20,519 @@ import {
     update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+
+// ========================================
+// TRACKER START
+// ========================================
+
 console.log("🚀 Tracker Started V3");
+
+
+// ========================================
+// FIREBASE LOGIN
+// ========================================
 
 const loggedIn = await loginAnonymous();
 
 if (!loggedIn) {
+
     alert("Firebase Connection Failed");
+
     throw new Error("Firebase Login Failed");
+
 }
+
+console.log("🔥 Firebase Connected");
+
+
+// ========================================
+// CREATE MAP
+// ========================================
 
 createMap();
 
-const startButton = document.getElementById("startButton");
-const stopButton = document.getElementById("stopButton");
-const status = document.getElementById("status");
+
+// ========================================
+// UI ELEMENTS
+// ========================================
+
+const startButton =
+    document.getElementById("startButton");
+
+const stopButton =
+    document.getElementById("stopButton");
+
+const status =
+    document.getElementById("status");
+
+
+// ========================================
+// INITIAL BUTTON STATE
+// ========================================
 
 startButton.disabled = false;
-startButton.innerText = "📍 START TRACKING";
+
+startButton.innerText =
+    "📍 START TRACKING";
+
+stopButton.disabled = true;
+
+
+// ========================================
+// GLOBAL VARIABLES
+// ========================================
 
 let watchId = null;
+
 let tracking = false;
 
 let tripStartTime = null;
+
 let tripId = null;
 
-// ================================
+
+// ========================================
+// LIVE ROUTE POINTS
+// ========================================
+
+let liveRoutePoints = [];
+
+
+// ========================================
 // START TRACKING
-// ================================
+// ========================================
 
 window.startTracking = async function () {
 
+    // Prevent duplicate tracking
     if (tracking) {
+
         return;
+
     }
+
+
+    // ====================================
+    // GET TRACKING ID
+    // ====================================
 
     const deviceId =
-        document.getElementById("deviceId").value.trim();
+        document
+            .getElementById("deviceId")
+            .value
+            .trim();
+
 
     if (!deviceId) {
+
         alert("Tracking ID Required");
+
         return;
+
     }
+
+
+    // ====================================
+    // GPS CHECK
+    // ====================================
 
     if (!navigator.geolocation) {
+
         alert("Geolocation Not Supported");
+
         return;
+
     }
 
-    try {
 
-        // Cleanup old trips
-        await cleanupOldTrips(deviceId);
+    // ====================================
+    // CLEAN OLD TRIPS
+    // ====================================
 
-        tracking = true;
-        tripStartTime = Date.now();
+    await cleanupOldTrips(deviceId);
 
-        tripId = "TRIP_" + Date.now();
 
-        console.log("Trip ID:", tripId);
+    // ====================================
+    // RESET LIVE ROUTE
+    // ====================================
 
-        // Create Trip
-        await set(
-            ref(
-                database,
-                "trips/" +
-                deviceId +
-                "/" +
-                tripId +
-                "/info"
-            ),
-            {
-                startTime: tripStartTime,
-                endTime: null,
-                status: "RUNNING"
-            }
-        );
+    liveRoutePoints = [];
 
-        // UI
-        startButton.disabled = true;
-        stopButton.disabled = false;
 
-        startButton.innerText =
-            "🟢 TRACKING ACTIVE";
+    // ====================================
+    // START TRIP
+    // ====================================
 
-        status.innerText =
-            "🛰 Waiting GPS...";
+    tracking = true;
 
-        // Clear previous watcher
-        if (watchId !== null) {
+    tripStartTime = Date.now();
 
-            navigator.geolocation.clearWatch(
-                watchId
-            );
+    tripId =
+        "TRIP_" + Date.now();
+
+
+    console.log(
+        "🚗 Trip ID:",
+        tripId
+    );
+
+
+    // ====================================
+    // SAVE TRIP INFO
+    // ====================================
+
+    await set(
+
+        ref(
+            database,
+            "trips/" +
+            deviceId +
+            "/" +
+            tripId +
+            "/info"
+        ),
+
+        {
+
+            startTime:
+                tripStartTime,
+
+            endTime:
+                null,
+
+            status:
+                "RUNNING"
 
         }
 
-        // ================================
-        // GPS WATCH
-        // ================================
+    );
 
-        watchId =
-            navigator.geolocation.watchPosition(
 
-                async (position) => {
+    // ====================================
+    // BUTTON UPDATE
+    // ====================================
 
-                    const lat =
-                        position.coords.latitude;
+    startButton.disabled = true;
 
-                    const lng =
-                        position.coords.longitude;
+    stopButton.disabled = false;
 
-                    const accuracy =
-                        position.coords.accuracy;
+    startButton.innerText =
+        "🟢 TRACKING ACTIVE";
 
-                    const timestamp =
-                        Date.now();
+    status.innerText =
+        "🛰 Waiting GPS...";
 
-                    // GPS Speed
-                    // ================================
-// LIVE SPEED CALCULATION
-// ================================
 
-let speed = position.coords.speed;
+    // ====================================
+    // REMOVE OLD WATCH
+    // ====================================
 
-// Previous GPS point
-if (!window.previousGPSPoint) {
+    if (watchId !== null) {
 
-    window.previousGPSPoint = {
-        lat: lat,
-        lng: lng,
-        time: timestamp
-    };
-
-}
-
-// Browser GPS speed available
-if (
-    speed !== null &&
-    speed !== undefined &&
-    speed >= 0
-) {
-
-    // m/s → km/h
-    speed = speed * 3.6;
-
-} else {
-
-    // Calculate speed manually
-    const previous = window.previousGPSPoint;
-
-    const R = 6371000;
-
-    const lat1 =
-        previous.lat * Math.PI / 180;
-
-    const lat2 =
-        lat * Math.PI / 180;
-
-    const dLat =
-        (lat - previous.lat) *
-        Math.PI / 180;
-
-    const dLng =
-        (lng - previous.lng) *
-        Math.PI / 180;
-
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1) *
-        Math.cos(lat2) *
-        Math.sin(dLng / 2) ** 2;
-
-    const distance =
-        2 * R *
-        Math.atan2(
-            Math.sqrt(a),
-            Math.sqrt(1 - a)
+        navigator.geolocation.clearWatch(
+            watchId
         );
-
-    const timeDifference =
-        (timestamp - previous.time) / 1000;
-
-    if (timeDifference > 0) {
-
-        // m/s → km/h
-        speed =
-            (distance / timeDifference) * 3.6;
-
-    } else {
-
-        speed = 0;
 
     }
 
-}
 
-// Update previous GPS point
-window.previousGPSPoint = {
-    lat: lat,
-    lng: lng,
-    time: timestamp
-};
+    // ====================================
+    // START GPS WATCH
+    // ====================================
 
-// Prevent invalid values
-if (
-    speed < 0 ||
-    !isFinite(speed)
-) {
+    watchId =
+        navigator.geolocation.watchPosition(
 
-    speed = 0;
+            async (position) => {
 
-}
+                // =================================
+                // GPS DATA
+                // =================================
 
-// Keep one decimal
-speed = Number(
-    speed.toFixed(1)
-);
-                    // Update Map
-                    updateMarker(
-                    lat,
-                    lng,
-                   speed
+                const lat =
+                    position.coords.latitude;
+
+                const lng =
+                    position.coords.longitude;
+
+                const accuracy =
+                    position.coords.accuracy;
+
+                const timestamp =
+                    Date.now();
+
+
+                // =================================
+                // LIVE SPEED
+                // =================================
+
+                let speed =
+                    position.coords.speed;
+
+
+                // m/s → km/h
+
+                if (
+                    speed !== null &&
+                    speed !== undefined &&
+                    speed >= 0
+                ) {
+
+                    speed =
+                        speed * 3.6;
+
+                } else {
+
+                    speed = 0;
+
+                }
+
+
+                // Remove strange GPS values
+
+                if (
+                    speed < 0 ||
+                    !isFinite(speed)
+                ) {
+
+                    speed = 0;
+
+                }
+
+
+                speed =
+                    Number(
+                        speed.toFixed(1)
                     );
 
-                    // Update UI
-                    document.getElementById("lat")
-                        .innerText =
-                        lat.toFixed(6);
 
-                    document.getElementById("lng")
-                        .innerText =
-                        lng.toFixed(6);
+                // =================================
+                // UPDATE MAP MARKER
+                // =================================
 
-                    document.getElementById("accuracy")
-                        .innerText =
-                        formatAccuracy(accuracy);
+                updateMarker(
+                    lat,
+                    lng,
+                    speed
+                );
 
-                    document.getElementById("time")
-                        .innerText =
-                        formatTime(timestamp);
 
-                    // Live Speed Display
-                    const speedElement =
-                        document.getElementById("speed");
+                // =================================
+                // ADD POINT TO LIVE ROUTE
+                // =================================
 
-                    if (speedElement) {
+                liveRoutePoints.push(
+                    [
+                        lat,
+                        lng
+                    ]
+                );
 
-                        speedElement.innerText =
-                            speed.toFixed(1) +
-                            " km/h";
 
-                    }
+                // =================================
+                // DRAW LIVE ROUTE
+                // =================================
 
-                    status.innerText =
-                        "🟢 Live Tracking";
+                drawRoute(
+                    liveRoutePoints
+                );
 
-                    try {
 
-                        // =========================
-                        // LIVE LOCATION
-                        // =========================
+                // =================================
+                // UPDATE UI
+                // =================================
 
-                        await set(
+                document
+                    .getElementById("lat")
+                    .innerText =
+                    lat.toFixed(6);
+
+
+                document
+                    .getElementById("lng")
+                    .innerText =
+                    lng.toFixed(6);
+
+
+                document
+                    .getElementById("accuracy")
+                    .innerText =
+                    formatAccuracy(
+                        accuracy
+                    );
+
+
+                document
+                    .getElementById("time")
+                    .innerText =
+                    formatTime(
+                        timestamp
+                    );
+
+
+                // =================================
+                // SPEED UI
+                // =================================
+
+                const speedElement =
+                    document.getElementById(
+                        "speed"
+                    );
+
+
+                if (speedElement) {
+
+                    speedElement.innerText =
+                        speed.toFixed(1) +
+                        " km/h";
+
+                }
+
+
+                status.innerText =
+                    "🟢 Live Tracking";
+
+
+                // =================================
+                // FIREBASE LIVE LOCATION
+                // =================================
+
+                try {
+
+                    await set(
+
+                        ref(
+                            database,
+                            "locations/" +
+                            deviceId
+                        ),
+
+                        {
+
+                            latitude:
+                                lat,
+
+                            longitude:
+                                lng,
+
+                            accuracy:
+                                accuracy,
+
+                            speed:
+                                speed,
+
+                            timestamp:
+                                timestamp
+
+                        }
+
+                    );
+
+
+                    // =================================
+                    // SAVE TRIP POINT
+                    // =================================
+
+                    await set(
+
+                        push(
+
                             ref(
                                 database,
-                                "locations/" +
-                                deviceId
-                            ),
-                            {
-                                latitude: lat,
-                                longitude: lng,
-                                accuracy: accuracy,
-                                speed: speed,
-                                timestamp: timestamp
-                            }
-                        );
+                                "trips/" +
+                                deviceId +
+                                "/" +
+                                tripId +
+                                "/points"
+                            )
 
-                        // =========================
-                        // TRIP POINT
-                        // =========================
+                        ),
 
-                        await set(
-                            push(
-                                ref(
-                                    database,
-                                    "trips/" +
-                                    deviceId +
-                                    "/" +
-                                    tripId +
-                                    "/points"
-                                )
-                            ),
-                            {
-                                latitude: lat,
-                                longitude: lng,
-                                accuracy: accuracy,
-                                speed: speed,
-                                timestamp: timestamp
-                            }
-                        );
+                        {
 
-                    } catch (error) {
+                            latitude:
+                                lat,
 
-                        console.error(
-                            "Firebase Upload Error:",
-                            error
-                        );
+                            longitude:
+                                lng,
 
-                        status.innerText =
-                            "❌ Firebase Upload Failed";
+                            accuracy:
+                                accuracy,
 
-                    }
+                            speed:
+                                speed,
 
-                },
+                            timestamp:
+                                timestamp
 
-                (error) => {
+                        }
+
+                    );
+
+
+                } catch (error) {
 
                     console.error(
-                        "GPS Error:",
+                        "Firebase Upload Error:",
                         error
                     );
 
                     status.innerText =
-                        "❌ GPS Error";
+                        "❌ Firebase Upload Failed";
 
-                },
-
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 10000
                 }
 
-            );
+            },
 
-    } catch (error) {
 
-        console.error(
-            "Start Tracking Error:",
-            error
+            // =====================================
+            // GPS ERROR
+            // =====================================
+
+            (error) => {
+
+                console.error(
+                    "GPS Error:",
+                    error
+                );
+
+                status.innerText =
+                    "❌ GPS Error";
+
+            },
+
+
+            // =====================================
+            // GPS OPTIONS
+            // =====================================
+
+            {
+
+                enableHighAccuracy:
+                    true,
+
+                maximumAge:
+                    0,
+
+                timeout:
+                    10000
+
+            }
+
         );
-
-        tracking = false;
-
-        startButton.disabled = false;
-        stopButton.disabled = true;
-
-        status.innerText =
-            "❌ Tracking Start Failed";
-
-        alert(
-            "Tracking could not be started."
-        );
-
-    }
 
 };
 
-// ================================
-// STOP TRACKING
-// ================================
 
-window.stopTracking = function () {
+// ========================================
+// STOP TRACKING
+// ========================================
+
+window.stopTracking = async function () {
+
+    // =====================================
+    // STOP GPS
+    // =====================================
 
     if (watchId !== null) {
 
@@ -383,61 +544,95 @@ window.stopTracking = function () {
 
     }
 
+
+    // =====================================
+    // TRACKING OFF
+    // =====================================
+
     tracking = false;
-    window.previousGPSPoint = null;
+
+
+    // =====================================
+    // BUTTON UPDATE
+    // =====================================
 
     startButton.disabled = false;
+
+    stopButton.disabled = true;
 
     startButton.innerText =
         "📍 START TRACKING";
 
-    stopButton.disabled = true;
+
+    // =====================================
+    // FINISH TRIP
+    // =====================================
 
     const deviceId =
-        document.getElementById("deviceId")
-            .value.trim();
+        document
+            .getElementById("deviceId")
+            .value
+            .trim();
 
-    if (tripId && deviceId) {
 
-        update(
-            ref(
-                database,
-                "trips/" +
-                deviceId +
-                "/" +
-                tripId +
-                "/info"
-            ),
-            {
-                endTime: Date.now(),
-                status: "FINISHED"
-            }
-        );
+    if (tripId) {
+
+        try {
+
+            await update(
+
+                ref(
+                    database,
+                    "trips/" +
+                    deviceId +
+                    "/" +
+                    tripId +
+                    "/info"
+                ),
+
+                {
+
+                    endTime:
+                        Date.now(),
+
+                    status:
+                        "FINISHED"
+
+                }
+
+            );
+
+            console.log(
+                "✅ Trip Finished:",
+                tripId
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Trip Finish Error:",
+                error
+            );
+
+        }
 
     }
+
 
     status.innerText =
         "⏹ Tracking Stopped";
 
-    const speedElement =
-        document.getElementById("speed");
 
-    if (speedElement) {
-
-        speedElement.innerText =
-            "0.0 km/h";
-
-    }
-
-    tripId = null;
-
-    console.log("Trip End");
+    console.log(
+        "⏹ Tracking Stopped"
+    );
 
 };
 
-// ================================
+
+// ========================================
 // INTERNET STATUS
-// ================================
+// ========================================
 
 window.addEventListener(
     "online",
@@ -449,6 +644,7 @@ window.addEventListener(
     }
 );
 
+
 window.addEventListener(
     "offline",
     () => {
@@ -457,4 +653,29 @@ window.addEventListener(
             "🔴 Internet Disconnected";
 
     }
+);
+
+
+// ========================================
+// PAGE CLOSE
+// ========================================
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        if (watchId !== null) {
+
+            navigator.geolocation.clearWatch(
+                watchId
+            );
+
+        }
+
+    }
+);
+
+
+console.log(
+    "✅ Tracker V3 Loaded Successfully"
 );
