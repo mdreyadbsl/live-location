@@ -1,5 +1,5 @@
 // ========================================
-// LEAFLET MAP HELPER V4
+// LEAFLET MAP HELPER V5
 // ========================================
 
 export let map = null;
@@ -16,11 +16,7 @@ export let endMarker = null;
 // MAP STATE
 // ========================================
 
-let firstLocation = true;
 let userInteracted = false;
-
-let routeRequestTimer = null;
-let lastRoutePointCount = 0;
 
 
 // ========================================
@@ -37,7 +33,8 @@ export function createMap(divId = "map") {
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
             maxZoom: 19,
-            attribution: "© OpenStreetMap contributors"
+            attribution:
+                "© OpenStreetMap contributors"
         }
     );
 
@@ -50,7 +47,8 @@ export function createMap(divId = "map") {
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
             maxZoom: 19,
-            attribution: "© Esri"
+            attribution:
+                "© Esri"
         }
     );
 
@@ -74,50 +72,41 @@ export function createMap(divId = "map") {
             normalLayer
         ],
 
-        // Smooth zoom
         zoomAnimation: true,
 
-        // Better mobile touch
+        fadeAnimation: true,
+
+        markerZoomAnimation: true,
+
         touchZoom: true,
 
         scrollWheelZoom: true,
 
         doubleClickZoom: true,
 
-        boxZoom: true,
-
-        keyboard: true
+        dragging: true
 
     });
 
 
     // ====================================
-    // MAP LAYER SWITCH
+    // LAYER SWITCH
     // ====================================
 
     L.control.layers(
-
         {
-
             "🗺 Normal": normalLayer,
-
             "🛰 Satellite": satelliteLayer
-
         },
-
         null,
-
         {
-
             collapsed: true
-
         }
-
     ).addTo(map);
 
 
     // ====================================
-    // DETECT USER MAP MOVEMENT
+    // USER MAP INTERACTION
     // ====================================
 
     map.on(
@@ -155,9 +144,7 @@ export function updateMarker(
 ) {
 
     if (!map) {
-
         return;
-
     }
 
 
@@ -177,46 +164,32 @@ export function updateMarker(
 
     if (!marker) {
 
-        marker =
-            L.marker(
-                [
-                    lat,
-                    lng
+        marker = L.marker(
+            [
+                lat,
+                lng
+            ],
+            {
+                zIndexOffset: 1000
+            }
+        )
+        .addTo(map)
+        .bindTooltip(
+            "🚗 " + speedText,
+            {
+                permanent: true,
+                direction: "top",
+                offset: [
+                    0,
+                    -35
                 ],
-                {
-
-                    zIndexOffset: 1000
-
-                }
-
-            )
-            .addTo(map)
-
-            .bindTooltip(
-
-                "🚗 " +
-                speedText,
-
-                {
-
-                    permanent: true,
-
-                    direction: "top",
-
-                    offset: [
-                        0,
-                        -35
-                    ],
-
-                    className:
-                        "speed-tooltip"
-
-                }
-
-            );
+                className:
+                    "speed-tooltip"
+            }
+        );
 
 
-        // First location
+        // First GPS location
         map.setView(
             [
                 lat,
@@ -226,11 +199,7 @@ export function updateMarker(
         );
 
 
-        firstLocation = false;
-
-
         return;
-
     }
 
 
@@ -251,19 +220,13 @@ export function updateMarker(
     // ====================================
 
     marker.setTooltipContent(
-
-        "🚗 " +
-        speedText
-
+        "🚗 " + speedText
     );
 
 
     // ====================================
-    // FOLLOW LIVE LOCATION
+    // FOLLOW LOCATION
     // ====================================
-
-    // Only follow if user hasn't manually
-    // moved/zoomed the map.
 
     if (!userInteracted) {
 
@@ -273,117 +236,10 @@ export function updateMarker(
                 lng
             ],
             {
-
                 animate: true,
-
                 duration: 0.5
-
             }
         );
-
-    }
-
-}
-
-
-// ========================================
-// ROAD ROUTE
-// ========================================
-
-async function getRoadRoute(points) {
-
-    if (
-        !points ||
-        points.length < 2
-    ) {
-
-        return null;
-
-    }
-
-
-    try {
-
-        // Use first and latest point
-        // to avoid huge URL requests.
-
-        const start =
-            points[0];
-
-        const end =
-            points[
-                points.length - 1
-            ];
-
-
-        const url =
-            "https://router.project-osrm.org/route/v1/driving/" +
-
-            start[1] +
-            "," +
-            start[0] +
-
-            ";" +
-
-            end[1] +
-            "," +
-            end[0] +
-
-            "?overview=full&geometries=geojson";
-
-
-        const response =
-            await fetch(url);
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Routing server error"
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !data.routes ||
-            data.routes.length === 0
-        ) {
-
-            return null;
-
-        }
-
-
-        const coordinates =
-            data
-                .routes[0]
-                .geometry
-                .coordinates;
-
-
-        return coordinates.map(
-            point => [
-
-                point[1],
-                point[0]
-
-            ]
-        );
-
-
-    } catch (error) {
-
-        console.warn(
-            "⚠️ Road route unavailable:",
-            error
-        );
-
-        return null;
 
     }
 
@@ -397,18 +253,17 @@ async function getRoadRoute(points) {
 export function drawRoute(points) {
 
     if (
+        !map ||
         !points ||
-        points.length === 0 ||
-        !map
+        points.length === 0
     ) {
 
         return;
-
     }
 
 
     // ====================================
-    // RAW GPS ROUTE
+    // WHITE ROUTE OUTLINE
     // ====================================
 
     if (routeOutline) {
@@ -421,28 +276,15 @@ export function drawRoute(points) {
 
         routeOutline =
             L.polyline(
-
                 points,
-
                 {
-
-                    color:
-                        "#ffffff",
-
-                    weight:
-                        10,
-
-                    opacity:
-                        0.9,
-
-                    lineCap:
-                        "round",
-
-                    lineJoin:
-                        "round"
-
+                    color: "#ffffff",
+                    weight: 9,
+                    opacity: 0.85,
+                    lineCap: "round",
+                    lineJoin: "round",
+                    interactive: false
                 }
-
             ).addTo(map);
 
     }
@@ -462,114 +304,18 @@ export function drawRoute(points) {
 
         routeLine =
             L.polyline(
-
                 points,
-
                 {
-
-                    color:
-                        "#2563eb",
-
-                    weight:
-                        6,
-
-                    opacity:
-                        0.95,
-
-                    lineCap:
-                        "round",
-
-                    lineJoin:
-                        "round"
-
+                    color: "#2563eb",
+                    weight: 5,
+                    opacity: 0.95,
+                    lineCap: "round",
+                    lineJoin: "round",
+                    interactive: false
                 }
-
             ).addTo(map);
 
     }
-
-
-    // ====================================
-    // ROAD ROUTING
-    // ====================================
-
-    // Don't request routing for every
-    // single GPS update.
-
-    if (
-        points.length < 2
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        points.length -
-        lastRoutePointCount <
-        5
-    ) {
-
-        return;
-
-    }
-
-
-    lastRoutePointCount =
-        points.length;
-
-
-    // Cancel previous timer
-
-    if (routeRequestTimer) {
-
-        clearTimeout(
-            routeRequestTimer
-        );
-
-    }
-
-
-    routeRequestTimer =
-        setTimeout(
-            async () => {
-
-                const roadPoints =
-                    await getRoadRoute(
-                        points
-                    );
-
-
-                if (
-                    roadPoints &&
-                    roadPoints.length > 1
-                ) {
-
-                    if (routeLine) {
-
-                        routeLine.setLatLngs(
-                            roadPoints
-                        );
-
-                    }
-
-
-                    if (routeOutline) {
-
-                        routeOutline.setLatLngs(
-                            roadPoints
-                        );
-
-                    }
-
-                }
-
-            },
-
-            1000
-
-        );
 
 }
 
@@ -583,18 +329,17 @@ export function showStartEndMarkers(
 ) {
 
     if (
+        !map ||
         !points ||
-        points.length === 0 ||
-        !map
+        points.length === 0
     ) {
 
         return;
-
     }
 
 
     // ====================================
-    // REMOVE OLD START
+    // REMOVE OLD MARKERS
     // ====================================
 
     if (startMarker) {
@@ -603,12 +348,9 @@ export function showStartEndMarkers(
             startMarker
         );
 
+        startMarker = null;
     }
 
-
-    // ====================================
-    // REMOVE OLD END
-    // ====================================
 
     if (endMarker) {
 
@@ -616,6 +358,7 @@ export function showStartEndMarkers(
             endMarker
         );
 
+        endMarker = null;
     }
 
 
@@ -625,19 +368,12 @@ export function showStartEndMarkers(
 
     startMarker =
         L.marker(
-
             points[0],
-
             {
-
                 zIndexOffset: 500
-
             }
-
         )
-
         .addTo(map)
-
         .bindPopup(
             "🟢 Trip Start"
         );
@@ -649,21 +385,14 @@ export function showStartEndMarkers(
 
     endMarker =
         L.marker(
-
             points[
                 points.length - 1
             ],
-
             {
-
                 zIndexOffset: 500
-
             }
-
         )
-
         .addTo(map)
-
         .bindPopup(
             "🔴 Trip End"
         );
@@ -672,7 +401,7 @@ export function showStartEndMarkers(
 
 
 // ========================================
-// RESET MAP FOLLOW MODE
+// ENABLE AUTO FOLLOW
 // ========================================
 
 export function enableAutoFollow() {
@@ -695,24 +424,22 @@ export function fitRoute(points) {
     ) {
 
         return;
-
     }
 
 
     map.fitBounds(
         points,
-
         {
-
             padding: [
                 40,
                 40
             ],
 
             maxZoom: 17
-
         }
-
     );
+
+
+    userInteracted = true;
 
 }
