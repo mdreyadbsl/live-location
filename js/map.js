@@ -90,23 +90,27 @@ export function createMap(divId = "map") {
 
 
     // ====================================
-    // LAYER SWITCH
+    // MAP LAYER SWITCH
     // ====================================
 
     L.control.layers(
+
         {
             "🗺 Normal": normalLayer,
             "🛰 Satellite": satelliteLayer
         },
+
         null,
+
         {
             collapsed: true
         }
+
     ).addTo(map);
 
 
     // ====================================
-    // USER MAP INTERACTION
+    // DETECT USER MAP MOVEMENT
     // ====================================
 
     map.on(
@@ -129,7 +133,99 @@ export function createMap(divId = "map") {
     );
 
 
+    // ====================================
+    // FOLLOW BUTTON
+    // ====================================
+
+    const FollowControl =
+        L.Control.extend({
+
+            options: {
+                position: "bottomright"
+            },
+
+            onAdd: function () {
+
+                const container =
+                    L.DomUtil.create(
+                        "div",
+                        "follow-location-control"
+                    );
+
+
+                const button =
+                    L.DomUtil.create(
+                        "button",
+                        "follow-location-button",
+                        container
+                    );
+
+
+                button.type = "button";
+
+                button.innerHTML = "🎯";
+
+                button.title =
+                    "Follow Live Location";
+
+
+                // Prevent map click
+                L.DomEvent.disableClickPropagation(
+                    container
+                );
+
+
+                // =================================
+                // FOLLOW CLICK
+                // =================================
+
+                L.DomEvent.on(
+                    button,
+                    "click",
+                    function () {
+
+                        userInteracted = false;
+
+
+                        if (
+                            marker
+                        ) {
+
+                            const position =
+                                marker.getLatLng();
+
+
+                            map.setView(
+                                [
+                                    position.lat,
+                                    position.lng
+                                ],
+                                17,
+                                {
+                                    animate: true
+                                }
+                            );
+
+                        }
+
+                    }
+                );
+
+
+                return container;
+
+            }
+
+        });
+
+
+    map.addControl(
+        new FollowControl()
+    );
+
+
     return map;
+
 }
 
 
@@ -153,43 +249,93 @@ export function updateMarker(
     speed = Number(speed) || 0;
 
 
+    // ====================================
+    // SPEED TEXT
+    // ====================================
+
     const speedText =
+        "🚗 " +
         speed.toFixed(1) +
         " km/h";
 
 
     // ====================================
-    // CREATE MARKER
+    // CREATE CUSTOM LIVE ICON
     // ====================================
 
     if (!marker) {
 
-        marker = L.marker(
-            [
-                lat,
-                lng
-            ],
+        const liveIcon =
+            L.divIcon({
+
+                className:
+                    "live-marker-wrapper",
+
+                html:
+                    `<div class="live-marker"></div>`,
+
+                iconSize: [
+                    42,
+                    42
+                ],
+
+                iconAnchor: [
+                    21,
+                    21
+                ]
+
+            });
+
+
+        marker =
+            L.marker(
+                [
+                    lat,
+                    lng
+                ],
+                {
+
+                    icon:
+                        liveIcon,
+
+                    zIndexOffset:
+                        1000
+
+                }
+            )
+            .addTo(map);
+
+
+        // =================================
+        // SPEED TOOLTIP
+        // =================================
+
+        marker.bindTooltip(
+            speedText,
             {
-                zIndexOffset: 1000
-            }
-        )
-        .addTo(map)
-        .bindTooltip(
-            "🚗 " + speedText,
-            {
-                permanent: true,
-                direction: "top",
+
+                permanent:
+                    true,
+
+                direction:
+                    "top",
+
                 offset: [
                     0,
-                    -35
+                    -25
                 ],
+
                 className:
                     "speed-tooltip"
+
             }
         );
 
 
-        // First GPS location
+        // =================================
+        // FIRST LOCATION
+        // =================================
+
         map.setView(
             [
                 lat,
@@ -200,6 +346,7 @@ export function updateMarker(
 
 
         return;
+
     }
 
 
@@ -220,12 +367,12 @@ export function updateMarker(
     // ====================================
 
     marker.setTooltipContent(
-        "🚗 " + speedText
+        speedText
     );
 
 
     // ====================================
-    // FOLLOW LOCATION
+    // AUTO FOLLOW
     // ====================================
 
     if (!userInteracted) {
@@ -236,8 +383,13 @@ export function updateMarker(
                 lng
             ],
             {
-                animate: true,
-                duration: 0.5
+
+                animate:
+                    true,
+
+                duration:
+                    0.5
+
             }
         );
 
@@ -247,7 +399,7 @@ export function updateMarker(
 
 
 // ========================================
-// DRAW ROUTE
+// DRAW BEAUTIFUL ROUTE
 // ========================================
 
 export function drawRoute(points) {
@@ -263,7 +415,7 @@ export function drawRoute(points) {
 
 
     // ====================================
-    // WHITE ROUTE OUTLINE
+    // ROUTE OUTLINE
     // ====================================
 
     if (routeOutline) {
@@ -278,12 +430,25 @@ export function drawRoute(points) {
             L.polyline(
                 points,
                 {
-                    color: "#ffffff",
-                    weight: 9,
-                    opacity: 0.85,
-                    lineCap: "round",
-                    lineJoin: "round",
-                    interactive: false
+
+                    color:
+                        "#ffffff",
+
+                    weight:
+                        9,
+
+                    opacity:
+                        0.9,
+
+                    lineCap:
+                        "round",
+
+                    lineJoin:
+                        "round",
+
+                    interactive:
+                        false
+
                 }
             ).addTo(map);
 
@@ -291,7 +456,7 @@ export function drawRoute(points) {
 
 
     // ====================================
-    // BLUE ROUTE
+    // MAIN BLUE ROUTE
     // ====================================
 
     if (routeLine) {
@@ -306,12 +471,25 @@ export function drawRoute(points) {
             L.polyline(
                 points,
                 {
-                    color: "#2563eb",
-                    weight: 5,
-                    opacity: 0.95,
-                    lineCap: "round",
-                    lineJoin: "round",
-                    interactive: false
+
+                    color:
+                        "#2563eb",
+
+                    weight:
+                        5,
+
+                    opacity:
+                        0.95,
+
+                    lineCap:
+                        "round",
+
+                    lineJoin:
+                        "round",
+
+                    interactive:
+                        false
+
                 }
             ).addTo(map);
 
@@ -339,7 +517,7 @@ export function showStartEndMarkers(
 
 
     // ====================================
-    // REMOVE OLD MARKERS
+    // REMOVE OLD START MARKER
     // ====================================
 
     if (startMarker) {
@@ -349,8 +527,13 @@ export function showStartEndMarkers(
         );
 
         startMarker = null;
+
     }
 
+
+    // ====================================
+    // REMOVE OLD END MARKER
+    // ====================================
 
     if (endMarker) {
 
@@ -359,18 +542,22 @@ export function showStartEndMarkers(
         );
 
         endMarker = null;
+
     }
 
 
     // ====================================
-    // START MARKER
+    // START
     // ====================================
 
     startMarker =
         L.marker(
             points[0],
             {
-                zIndexOffset: 500
+
+                zIndexOffset:
+                    500
+
             }
         )
         .addTo(map)
@@ -380,7 +567,7 @@ export function showStartEndMarkers(
 
 
     // ====================================
-    // END MARKER
+    // END
     // ====================================
 
     endMarker =
@@ -389,7 +576,10 @@ export function showStartEndMarkers(
                 points.length - 1
             ],
             {
-                zIndexOffset: 500
+
+                zIndexOffset:
+                    500
+
             }
         )
         .addTo(map)
@@ -407,6 +597,29 @@ export function showStartEndMarkers(
 export function enableAutoFollow() {
 
     userInteracted = false;
+
+
+    if (
+        marker &&
+        map
+    ) {
+
+        const position =
+            marker.getLatLng();
+
+
+        map.setView(
+            [
+                position.lat,
+                position.lng
+            ],
+            17,
+            {
+                animate: true
+            }
+        );
+
+    }
 
 }
 
@@ -430,12 +643,15 @@ export function fitRoute(points) {
     map.fitBounds(
         points,
         {
+
             padding: [
                 40,
                 40
             ],
 
-            maxZoom: 17
+            maxZoom:
+                17
+
         }
     );
 
