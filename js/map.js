@@ -1,4 +1,6 @@
-// Leaflet Map Helper
+// ========================================
+// LEAFLET MAP HELPER V4
+// ========================================
 
 export let map = null;
 export let marker = null;
@@ -11,52 +13,131 @@ export let endMarker = null;
 
 
 // ========================================
+// MAP STATE
+// ========================================
+
+let firstLocation = true;
+let userInteracted = false;
+
+let routeRequestTimer = null;
+let lastRoutePointCount = 0;
+
+
+// ========================================
 // CREATE MAP
 // ========================================
 
 export function createMap(divId = "map") {
 
-    // Normal Map
+    // ====================================
+    // NORMAL MAP
+    // ====================================
+
     const normalLayer = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
-            maxZoom: 22,
-            attribution: "© OpenStreetMap"
+            maxZoom: 19,
+            attribution: "© OpenStreetMap contributors"
         }
     );
 
-    // Pure Satellite
+
+    // ====================================
+    // PURE SATELLITE
+    // ====================================
+
     const satelliteLayer = L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
-            maxZoom: 22,
-            attribution: "&copy; Esri"
+            maxZoom: 19,
+            attribution: "© Esri"
         }
     );
 
+
+    // ====================================
+    // CREATE MAP
+    // ====================================
+
     map = L.map(divId, {
 
-        center: [23.8103, 90.4125],
+        center: [
+            23.8103,
+            90.4125
+        ],
 
         zoom: 13,
 
-        layers: [normalLayer],
+        zoomControl: true,
 
-        zoomControl: true
+        layers: [
+            normalLayer
+        ],
+
+        // Smooth zoom
+        zoomAnimation: true,
+
+        // Better mobile touch
+        touchZoom: true,
+
+        scrollWheelZoom: true,
+
+        doubleClickZoom: true,
+
+        boxZoom: true,
+
+        keyboard: true
 
     });
 
 
-    // ========================================
+    // ====================================
     // MAP LAYER SWITCH
-    // ========================================
+    // ====================================
 
     L.control.layers(
+
         {
+
             "🗺 Normal": normalLayer,
+
             "🛰 Satellite": satelliteLayer
+
+        },
+
+        null,
+
+        {
+
+            collapsed: true
+
         }
+
     ).addTo(map);
+
+
+    // ====================================
+    // DETECT USER MAP MOVEMENT
+    // ====================================
+
+    map.on(
+        "dragstart",
+        () => {
+
+            userInteracted = true;
+
+        }
+    );
+
+
+    map.on(
+        "zoomstart",
+        () => {
+
+            userInteracted = true;
+
+        }
+    );
 
 
     return map;
@@ -73,66 +154,252 @@ export function updateMarker(
     speed = 0
 ) {
 
+    if (!map) {
+
+        return;
+
+    }
+
+
+    lat = Number(lat);
+    lng = Number(lng);
+    speed = Number(speed) || 0;
+
+
     const speedText =
-        Number(speed).toFixed(1) +
+        speed.toFixed(1) +
         " km/h";
 
 
-    if (marker) {
+    // ====================================
+    // CREATE MARKER
+    // ====================================
 
-        marker.setLatLng([
-            lat,
-            lng
-        ]);
+    if (!marker) {
 
-        marker.setTooltipContent(
-            "🚗 " + speedText
+        marker =
+            L.marker(
+                [
+                    lat,
+                    lng
+                ],
+                {
+
+                    zIndexOffset: 1000
+
+                }
+
+            )
+            .addTo(map)
+
+            .bindTooltip(
+
+                "🚗 " +
+                speedText,
+
+                {
+
+                    permanent: true,
+
+                    direction: "top",
+
+                    offset: [
+                        0,
+                        -35
+                    ],
+
+                    className:
+                        "speed-tooltip"
+
+                }
+
+            );
+
+
+        // First location
+        map.setView(
+            [
+                lat,
+                lng
+            ],
+            17
         );
 
-    } else {
 
-        marker = L.marker([
+        firstLocation = false;
+
+
+        return;
+
+    }
+
+
+    // ====================================
+    // MOVE MARKER
+    // ====================================
+
+    marker.setLatLng(
+        [
             lat,
             lng
-        ])
-        .addTo(map)
+        ]
+    );
 
-        .bindTooltip(
-            "🚗 " + speedText,
+
+    // ====================================
+    // UPDATE SPEED
+    // ====================================
+
+    marker.setTooltipContent(
+
+        "🚗 " +
+        speedText
+
+    );
+
+
+    // ====================================
+    // FOLLOW LIVE LOCATION
+    // ====================================
+
+    // Only follow if user hasn't manually
+    // moved/zoomed the map.
+
+    if (!userInteracted) {
+
+        map.panTo(
+            [
+                lat,
+                lng
+            ],
             {
-                permanent: true,
 
-                direction: "top",
+                animate: true,
 
-                offset: [
-                    0,
-                    -35
-                ],
+                duration: 0.5
 
-                className:
-                    "speed-tooltip"
             }
         );
 
     }
 
-
-    map.setView(
-        [lat, lng],
-        17
-    );
 }
 
 
 // ========================================
-// DRAW BEAUTIFUL ROUTE
+// ROAD ROUTE
+// ========================================
+
+async function getRoadRoute(points) {
+
+    if (
+        !points ||
+        points.length < 2
+    ) {
+
+        return null;
+
+    }
+
+
+    try {
+
+        // Use first and latest point
+        // to avoid huge URL requests.
+
+        const start =
+            points[0];
+
+        const end =
+            points[
+                points.length - 1
+            ];
+
+
+        const url =
+            "https://router.project-osrm.org/route/v1/driving/" +
+
+            start[1] +
+            "," +
+            start[0] +
+
+            ";" +
+
+            end[1] +
+            "," +
+            end[0] +
+
+            "?overview=full&geometries=geojson";
+
+
+        const response =
+            await fetch(url);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Routing server error"
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !data.routes ||
+            data.routes.length === 0
+        ) {
+
+            return null;
+
+        }
+
+
+        const coordinates =
+            data
+                .routes[0]
+                .geometry
+                .coordinates;
+
+
+        return coordinates.map(
+            point => [
+
+                point[1],
+                point[0]
+
+            ]
+        );
+
+
+    } catch (error) {
+
+        console.warn(
+            "⚠️ Road route unavailable:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+// ========================================
+// DRAW ROUTE
 // ========================================
 
 export function drawRoute(points) {
 
     if (
         !points ||
-        points.length === 0
+        points.length === 0 ||
+        !map
     ) {
 
         return;
@@ -141,7 +408,7 @@ export function drawRoute(points) {
 
 
     // ====================================
-    // ROUTE OUTLINE
+    // RAW GPS ROUTE
     // ====================================
 
     if (routeOutline) {
@@ -154,27 +421,35 @@ export function drawRoute(points) {
 
         routeOutline =
             L.polyline(
+
                 points,
+
                 {
 
-                    color: "#ffffff",
+                    color:
+                        "#ffffff",
 
-                    weight: 9,
+                    weight:
+                        10,
 
-                    opacity: 0.9,
+                    opacity:
+                        0.9,
 
-                    lineCap: "round",
+                    lineCap:
+                        "round",
 
-                    lineJoin: "round"
+                    lineJoin:
+                        "round"
 
                 }
+
             ).addTo(map);
 
     }
 
 
     // ====================================
-    // MAIN ROUTE LINE
+    // BLUE ROUTE
     // ====================================
 
     if (routeLine) {
@@ -187,23 +462,114 @@ export function drawRoute(points) {
 
         routeLine =
             L.polyline(
+
                 points,
+
                 {
 
-                    color: "#2563eb",
+                    color:
+                        "#2563eb",
 
-                    weight: 5,
+                    weight:
+                        6,
 
-                    opacity: 0.95,
+                    opacity:
+                        0.95,
 
-                    lineCap: "round",
+                    lineCap:
+                        "round",
 
-                    lineJoin: "round"
+                    lineJoin:
+                        "round"
 
                 }
+
             ).addTo(map);
 
     }
+
+
+    // ====================================
+    // ROAD ROUTING
+    // ====================================
+
+    // Don't request routing for every
+    // single GPS update.
+
+    if (
+        points.length < 2
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        points.length -
+        lastRoutePointCount <
+        5
+    ) {
+
+        return;
+
+    }
+
+
+    lastRoutePointCount =
+        points.length;
+
+
+    // Cancel previous timer
+
+    if (routeRequestTimer) {
+
+        clearTimeout(
+            routeRequestTimer
+        );
+
+    }
+
+
+    routeRequestTimer =
+        setTimeout(
+            async () => {
+
+                const roadPoints =
+                    await getRoadRoute(
+                        points
+                    );
+
+
+                if (
+                    roadPoints &&
+                    roadPoints.length > 1
+                ) {
+
+                    if (routeLine) {
+
+                        routeLine.setLatLngs(
+                            roadPoints
+                        );
+
+                    }
+
+
+                    if (routeOutline) {
+
+                        routeOutline.setLatLngs(
+                            roadPoints
+                        );
+
+                    }
+
+                }
+
+            },
+
+            1000
+
+        );
 
 }
 
@@ -218,7 +584,8 @@ export function showStartEndMarkers(
 
     if (
         !points ||
-        points.length === 0
+        points.length === 0 ||
+        !map
     ) {
 
         return;
@@ -226,7 +593,10 @@ export function showStartEndMarkers(
     }
 
 
-    // Remove old Start Marker
+    // ====================================
+    // REMOVE OLD START
+    // ====================================
+
     if (startMarker) {
 
         map.removeLayer(
@@ -236,7 +606,10 @@ export function showStartEndMarkers(
     }
 
 
-    // Remove old End Marker
+    // ====================================
+    // REMOVE OLD END
+    // ====================================
+
     if (endMarker) {
 
         map.removeLayer(
@@ -247,13 +620,22 @@ export function showStartEndMarkers(
 
 
     // ====================================
-    // START
+    // START MARKER
     // ====================================
 
     startMarker =
         L.marker(
-            points[0]
+
+            points[0],
+
+            {
+
+                zIndexOffset: 500
+
+            }
+
         )
+
         .addTo(map)
 
         .bindPopup(
@@ -262,19 +644,75 @@ export function showStartEndMarkers(
 
 
     // ====================================
-    // END
+    // END MARKER
     // ====================================
 
     endMarker =
         L.marker(
+
             points[
                 points.length - 1
-            ]
+            ],
+
+            {
+
+                zIndexOffset: 500
+
+            }
+
         )
+
         .addTo(map)
 
         .bindPopup(
             "🔴 Trip End"
         );
+
+}
+
+
+// ========================================
+// RESET MAP FOLLOW MODE
+// ========================================
+
+export function enableAutoFollow() {
+
+    userInteracted = false;
+
+}
+
+
+// ========================================
+// FIT COMPLETE ROUTE
+// ========================================
+
+export function fitRoute(points) {
+
+    if (
+        !map ||
+        !points ||
+        points.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    map.fitBounds(
+        points,
+
+        {
+
+            padding: [
+                40,
+                40
+            ],
+
+            maxZoom: 17
+
+        }
+
+    );
 
 }
