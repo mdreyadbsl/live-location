@@ -1,200 +1,183 @@
-
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
-body{
-    font-family:Arial,Helvetica,sans-serif;
-    background:#f5f5f5;
-}
-
-header{
-    background:#111827;
-    color:white;
-    text-align:center;
-    padding:18px;
-    font-size:22px;
-    font-weight:bold;
-}
-
-.container{
-    background:white;
-    padding:15px;
-}
-
-label{
-    font-weight:bold;
-}
-
-input{
-    width:100%;
-    margin-top:8px;
-    margin-bottom:12px;
-    padding:14px;
-    border-radius:8px;
-    border:1px solid #ccc;
-    font-size:16px;
-}
-
-button{
-    width:100%;
-    padding:14px;
-    border:none;
-    border-radius:8px;
-    background:#2563EB;
-    color:white;
-    font-size:16px;
-    cursor:pointer;
-}
-
-button:hover{
-    opacity:.9;
-}
-
-button:disabled{
-    background:#999;
-}
-
-#map{
-    width:100%;
-    height:60vh;
-}
-
-.status{
-    background:white;
-    padding:12px;
-    font-weight:bold;
-}
-
-.info{
-    background:white;
-    padding:8px 15px;
-}
-
-.online{
-    color:#16A34A;
-}
-
-.offline{
-    color:#DC2626;
-}
-.speed-tooltip {
-    background: white;
-    border: 2px solid #2563eb;
-    border-radius: 8px;
-    padding: 5px 9px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #111827;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-.speed-tooltip::before {
-    border-top-color: #2563eb;
-}
 /* ========================================
-   STEP 2 - LIVE LOCATION MARKER
-   ======================================== */
+   PREMIUM MAP UI V7
+======================================== */
 
-.live-marker-wrapper {
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f3f4f6;
+}
+
+
+/* ========================================
+   HEADER
+======================================== */
+
+header {
+    background: #111827;
+    color: white;
+    text-align: center;
+    padding: 18px;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+
+/* ========================================
+   CONTAINER
+======================================== */
+
+.container {
+    background: white;
+    padding: 15px;
+}
+
+label {
+    font-weight: bold;
+}
+
+input {
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    font-size: 16px;
+    outline: none;
+}
+
+input:focus {
+    border-color: #2563eb;
+}
+
+
+/* ========================================
+   BUTTON
+======================================== */
+
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: .92;
+}
+
+button:disabled {
+    background: #9ca3af;
+}
+
+
+/* ========================================
+   MAP
+======================================== */
+
+#map {
+    width: 100%;
+    height: 65vh;
+    min-height: 420px;
+    position: relative;
+}
+
+
+/* ========================================
+   STATUS
+======================================== */
+
+.status {
+    background: white;
+    padding: 13px 15px;
+    font-weight: 700;
+}
+
+
+/* ========================================
+   INFO
+======================================== */
+
+.info {
+    background: white;
+    padding: 9px 15px;
+    border-top: 1px solid #f1f1f1;
+}
+
+
+/* ========================================
+   PREMIUM LIVE MARKER
+======================================== */
+
+.premium-live-marker-wrapper {
     background: transparent;
     border: none;
 }
 
+.premium-live-marker {
 
-/* ========================================
-   CUSTOM LIVE PIN
-   ======================================== */
-
-.live-marker {
-    width: 42px;
-    height: 42px;
-
-    background: #2563eb;
-
-    border: 4px solid white;
+    width: 46px;
+    height: 46px;
 
     border-radius: 50%;
 
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.35);
-
-    position: relative;
+    background: rgba(37, 99, 235, 0.20);
 
     display: flex;
 
     align-items: center;
 
     justify-content: center;
+
+    animation: livePulse 1.8s infinite;
 }
 
+.premium-live-dot {
 
-/* Inner white circle */
-
-.live-marker::after {
-
-    content: "";
-
-    width: 12px;
-    height: 12px;
-
-    background: white;
+    width: 20px;
+    height: 20px;
 
     border-radius: 50%;
 
+    background: #2563eb;
+
+    border: 4px solid white;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,.35);
 }
 
 
 /* ========================================
    LIVE PULSE
-   ======================================== */
-
-.live-marker::before {
-
-    content: "";
-
-    position: absolute;
-
-    width: 42px;
-    height: 42px;
-
-    border-radius: 50%;
-
-    border: 2px solid #2563eb;
-
-    opacity: 0.5;
-
-    animation: livePulse 1.8s infinite;
-
-}
-
+======================================== */
 
 @keyframes livePulse {
 
     0% {
-
-        transform: scale(1);
-
-        opacity: 0.6;
-
+        transform: scale(.85);
+        opacity: .75;
     }
 
-    70% {
-
-        transform: scale(1.8);
-
-        opacity: 0;
-
+    50% {
+        transform: scale(1);
+        opacity: 1;
     }
 
     100% {
-
-        transform: scale(1.8);
-
-        opacity: 0;
-
+        transform: scale(.85);
+        opacity: .75;
     }
 
 }
@@ -202,60 +185,57 @@ button:disabled{
 
 /* ========================================
    SPEED TOOLTIP
-   ======================================== */
+======================================== */
 
-.speed-tooltip {
+.premium-speed-tooltip {
 
     background: white;
 
     color: #111827;
 
-    border: none;
+    border: 2px solid #2563eb;
 
-    border-radius: 18px;
+    border-radius: 10px;
 
-    padding: 6px 11px;
+    padding: 6px 10px;
 
     font-size: 14px;
 
-    font-weight: bold;
+    font-weight: 700;
 
     box-shadow:
-        0 3px 12px rgba(0, 0, 0, 0.25);
+        0 4px 14px rgba(0,0,0,.22);
 
 }
 
-
-/* Remove Leaflet tooltip arrow */
-
-.speed-tooltip::before {
-
-    display: none;
-
+.premium-speed-tooltip::before {
+    border-top-color: #2563eb;
 }
 
 
 /* ========================================
    FOLLOW BUTTON
-   ======================================== */
+======================================== */
 
-.follow-location-control {
-
-    margin-top: 10px;
-
+.premium-follow-control {
+    margin-bottom: 10px;
 }
 
+.premium-follow-button {
 
-.follow-location-button {
+    width: 46px !important;
 
-    width: 42px;
-    height: 42px;
+    height: 46px;
+
+    padding: 0;
+
+    border-radius: 50%;
 
     background: white;
 
-    border: none;
+    color: #111827;
 
-    border-radius: 10px;
+    font-size: 21px;
 
     display: flex;
 
@@ -263,54 +243,99 @@ button:disabled{
 
     justify-content: center;
 
-    font-size: 20px;
+    box-shadow:
+        0 3px 12px rgba(0,0,0,.25);
 
-    cursor: pointer;
+    border: 1px solid #e5e7eb;
+
+}
+
+.premium-follow-button:hover {
+    background: #f9fafb;
+}
+
+
+/* ========================================
+   LEAFLET CONTROLS
+======================================== */
+
+.leaflet-control-zoom a {
+
+    width: 40px !important;
+
+    height: 40px !important;
+
+    line-height: 40px !important;
+
+    font-size: 20px !important;
+
+    background: white !important;
+
+    color: #111827 !important;
+
+    border: none !important;
+
+}
+
+.leaflet-control-zoom {
+
+    border-radius: 10px !important;
+
+    overflow: hidden;
 
     box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.25);
+        0 3px 12px rgba(0,0,0,.25);
 
 }
 
 
-.follow-location-button:hover {
+/* ========================================
+   LAYER CONTROL
+======================================== */
 
-    background: #f3f4f6;
+.leaflet-control-layers {
 
-}
+    border-radius: 10px !important;
 
+    border: none !important;
 
-.follow-location-button:active {
-
-    transform: scale(0.95);
+    box-shadow:
+        0 3px 12px rgba(0,0,0,.25);
 
 }
 
 
 /* ========================================
    MOBILE
-   ======================================== */
+======================================== */
 
 @media (max-width: 600px) {
 
+    header {
+        font-size: 19px;
+        padding: 15px;
+    }
+
     #map {
+        height: 62vh;
+        min-height: 380px;
+    }
 
-        height: 65vh;
+    .premium-follow-button {
+
+        width: 44px !important;
+
+        height: 44px;
 
     }
 
-    .live-marker {
+    .leaflet-control-zoom a {
 
-        width: 38px;
-        height: 38px;
+        width: 38px !important;
 
-    }
+        height: 38px !important;
 
-    .speed-tooltip {
-
-        font-size: 13px;
-
-        padding: 5px 9px;
+        line-height: 38px !important;
 
     }
 

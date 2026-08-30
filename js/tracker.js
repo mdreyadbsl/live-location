@@ -491,15 +491,35 @@ window.startTracking = async function () {
 
             (error) => {
 
-                console.error(
-                    "GPS Error:",
-                    error
-                );
+    console.error("GPS Error:", error);
 
-                status.innerText =
-                    "❌ GPS Error";
+    if (error.code === 1) {
 
-            },
+        status.innerText =
+            "❌ Location Permission Denied";
+
+        alert(
+            "Location permission is blocked. Please allow Location access for this site."
+        );
+
+    } else if (error.code === 2) {
+
+        status.innerText =
+            "❌ GPS Location Unavailable";
+
+    } else if (error.code === 3) {
+
+        status.innerText =
+            "⏳ GPS Timeout - Trying Again...";
+
+    } else {
+
+        status.innerText =
+            "❌ GPS Error";
+
+    }
+
+},
 
 
             // =====================================

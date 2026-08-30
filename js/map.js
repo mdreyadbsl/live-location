@@ -1,6 +1,6 @@
 // ========================================
-// LEAFLET MAP HELPER V6
-// ROAD FOLLOWING ROUTE
+// LEAFLET MAP HELPER V7
+// PREMIUM LIVE MAP UI
 // ========================================
 
 export let map = null;
@@ -13,8 +13,6 @@ export let startMarker = null;
 export let endMarker = null;
 
 let userInteracted = false;
-let routeRequestTimer = null;
-let lastMatchedPointCount = 0;
 
 
 // ========================================
@@ -23,31 +21,50 @@ let lastMatchedPointCount = 0;
 
 export function createMap(divId = "map") {
 
+    // Normal Map
     const normalLayer = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
             maxZoom: 19,
-            attribution: "© OpenStreetMap contributors"
+            attribution:
+                "© OpenStreetMap contributors"
         }
     );
 
+
+    // Pure Satellite
     const satelliteLayer = L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
             maxZoom: 19,
-            attribution: "© Esri"
+            attribution:
+                "© Esri"
         }
     );
 
+
+    // ====================================
+    // MAP
+    // ====================================
+
     map = L.map(divId, {
 
-        center: [23.8103, 90.4125],
+        center: [
+            23.8103,
+            90.4125
+        ],
 
         zoom: 13,
 
-        zoomControl: true,
+        minZoom: 3,
 
-        layers: [normalLayer],
+        maxZoom: 19,
+
+        zoomControl: false,
+
+        layers: [
+            normalLayer
+        ],
 
         zoomAnimation: true,
 
@@ -55,39 +72,51 @@ export function createMap(divId = "map") {
 
         markerZoomAnimation: true,
 
-        touchZoom: true,
-
-        scrollWheelZoom: true,
-
-        doubleClickZoom: true,
-
-        dragging: true
+        preferCanvas: true
 
     });
 
 
     // ====================================
-    // MAP LAYER SWITCH
+    // PREMIUM ZOOM CONTROL
+    // ====================================
+
+    L.control.zoom({
+
+        position: "bottomright"
+
+    }).addTo(map);
+
+
+    // ====================================
+    // LAYER SWITCH
     // ====================================
 
     L.control.layers(
 
         {
+
             "🗺 Normal": normalLayer,
+
             "🛰 Satellite": satelliteLayer
+
         },
 
         null,
 
         {
+
+            position: "topright",
+
             collapsed: true
+
         }
 
     ).addTo(map);
 
 
     // ====================================
-    // USER MAP INTERACTION
+    // USER INTERACTION
     // ====================================
 
     map.on(
@@ -98,6 +127,7 @@ export function createMap(divId = "map") {
 
         }
     );
+
 
     map.on(
         "zoomstart",
@@ -110,7 +140,7 @@ export function createMap(divId = "map") {
 
 
     // ====================================
-    // FOLLOW CONTROL
+    // FOLLOW BUTTON
     // ====================================
 
     const FollowControl =
@@ -125,48 +155,66 @@ export function createMap(divId = "map") {
                 const container =
                     L.DomUtil.create(
                         "div",
-                        "follow-location-control"
+                        "premium-follow-control"
                     );
+
 
                 const button =
                     L.DomUtil.create(
                         "button",
-                        "follow-location-button",
+                        "premium-follow-button",
                         container
                     );
 
-                button.type = "button";
 
-                button.innerHTML = "🎯";
+                button.type =
+                    "button";
+
+
+                button.innerHTML =
+                    "🎯";
+
 
                 button.title =
                     "Follow Live Location";
 
+
                 L.DomEvent.disableClickPropagation(
                     container
                 );
+
 
                 L.DomEvent.on(
                     button,
                     "click",
                     function () {
 
-                        userInteracted = false;
+                        userInteracted =
+                            false;
 
-                        if (marker) {
+
+                        if (
+                            marker
+                        ) {
 
                             const position =
                                 marker.getLatLng();
 
+
                             map.setView(
+
                                 [
                                     position.lat,
                                     position.lng
                                 ],
+
                                 17,
+
                                 {
-                                    animate: true
+                                    animate:
+                                        true
                                 }
+
                             );
 
                         }
@@ -174,21 +222,26 @@ export function createMap(divId = "map") {
                     }
                 );
 
+
                 return container;
+
             }
 
         });
+
 
     map.addControl(
         new FollowControl()
     );
 
+
     return map;
+
 }
 
 
 // ========================================
-// LIVE MARKER + SPEED
+// LIVE MARKER
 // ========================================
 
 export function updateMarker(
@@ -198,12 +251,23 @@ export function updateMarker(
 ) {
 
     if (!map) {
+
         return;
+
     }
 
-    lat = Number(lat);
-    lng = Number(lng);
-    speed = Number(speed) || 0;
+
+    lat =
+        Number(lat);
+
+
+    lng =
+        Number(lng);
+
+
+    speed =
+        Number(speed) || 0;
+
 
     const speedText =
         "🚗 " +
@@ -212,7 +276,7 @@ export function updateMarker(
 
 
     // ====================================
-    // CREATE MARKER
+    // CREATE PREMIUM MARKER
     // ====================================
 
     if (!marker) {
@@ -221,44 +285,59 @@ export function updateMarker(
             L.divIcon({
 
                 className:
-                    "live-marker-wrapper",
+                    "premium-live-marker-wrapper",
 
                 html:
-                    `<div class="live-marker"></div>`,
+
+                    `
+                    <div class="premium-live-marker">
+                        <div class="premium-live-dot"></div>
+                    </div>
+                    `,
 
                 iconSize: [
-                    42,
-                    42
+                    46,
+                    46
                 ],
 
                 iconAnchor: [
-                    21,
-                    21
+                    23,
+                    23
                 ]
 
             });
 
+
         marker =
             L.marker(
+
                 [
                     lat,
                     lng
                 ],
+
                 {
 
                     icon:
                         liveIcon,
 
                     zIndexOffset:
-                        1000
+                        2000
 
                 }
+
             )
             .addTo(map);
 
 
+        // =================================
+        // SPEED TOOLTIP
+        // =================================
+
         marker.bindTooltip(
+
             speedText,
+
             {
 
                 permanent:
@@ -273,21 +352,29 @@ export function updateMarker(
                 ],
 
                 className:
-                    "speed-tooltip"
+                    "premium-speed-tooltip"
 
             }
+
         );
 
 
+        // First location
+
         map.setView(
+
             [
                 lat,
                 lng
             ],
+
             17
+
         );
 
+
         return;
+
     }
 
 
@@ -296,10 +383,12 @@ export function updateMarker(
     // ====================================
 
     marker.setLatLng(
+
         [
             lat,
             lng
         ]
+
     );
 
 
@@ -319,17 +408,22 @@ export function updateMarker(
     if (!userInteracted) {
 
         map.panTo(
+
             [
                 lat,
                 lng
             ],
+
             {
 
-                animate: true,
+                animate:
+                    true,
 
-                duration: 0.5
+                duration:
+                    0.5
 
             }
+
         );
 
     }
@@ -338,193 +432,19 @@ export function updateMarker(
 
 
 // ========================================
-// ROAD MATCHING
-// ========================================
-
-async function getRoadRoute(points) {
-
-    if (
-        !points ||
-        points.length < 2
-    ) {
-
-        return null;
-
-    }
-
-
-    try {
-
-        // --------------------------------
-        // Limit GPS points
-        // --------------------------------
-
-        let selectedPoints = points;
-
-        if (points.length > 80) {
-
-            const step =
-                Math.floor(
-                    points.length / 80
-                );
-
-            selectedPoints =
-                points.filter(
-                    (_, index) =>
-                        index % step === 0
-                );
-
-            // Always keep final point
-
-            if (
-                selectedPoints[
-                    selectedPoints.length - 1
-                ] !==
-                points[
-                    points.length - 1
-                ]
-            ) {
-
-                selectedPoints.push(
-                    points[
-                        points.length - 1
-                    ]
-                );
-
-            }
-
-        }
-
-
-        // --------------------------------
-        // OSRM coordinates
-        // --------------------------------
-
-        const coordinates =
-            selectedPoints
-                .map(point =>
-                    Number(point[1]) +
-                    "," +
-                    Number(point[0])
-                )
-                .join(";");
-
-
-        // --------------------------------
-        // OSRM MATCH API
-        // --------------------------------
-
-        const url =
-            "https://router.project-osrm.org/match/v1/driving/" +
-            coordinates +
-            "?overview=full&geometries=geojson&steps=false";
-
-
-        const response =
-            await fetch(url);
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "OSRM request failed"
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !data.matchings ||
-            data.matchings.length === 0
-        ) {
-
-            console.warn(
-                "⚠️ No road matching found"
-            );
-
-            return null;
-
-        }
-
-
-        // --------------------------------
-        // Get matched route
-        // --------------------------------
-
-        let roadPoints = [];
-
-
-        data.matchings.forEach(
-            matching => {
-
-                if (
-                    matching.geometry &&
-                    matching.geometry.coordinates
-                ) {
-
-                    const coords =
-                        matching.geometry.coordinates;
-
-
-                    coords.forEach(
-                        point => {
-
-                            roadPoints.push(
-                                [
-                                    point[1],
-                                    point[0]
-                                ]
-                            );
-
-                        }
-                    );
-
-                }
-
-            }
-        );
-
-
-        if (
-            roadPoints.length < 2
-        ) {
-
-            return null;
-
-        }
-
-
-        return roadPoints;
-
-
-    } catch (error) {
-
-        console.warn(
-            "⚠️ Road matching unavailable:",
-            error
-        );
-
-        return null;
-
-    }
-
-}
-
-
-// ========================================
-// DRAW ROUTE
+// DRAW PREMIUM ROUTE
 // ========================================
 
 export function drawRoute(points) {
 
     if (
+
         !map ||
+
         !points ||
+
         points.length === 0
+
     ) {
 
         return;
@@ -533,7 +453,7 @@ export function drawRoute(points) {
 
 
     // ====================================
-    // DRAW RAW GPS ROUTE FIRST
+    // WHITE ROUTE OUTLINE
     // ====================================
 
     if (routeOutline) {
@@ -546,7 +466,9 @@ export function drawRoute(points) {
 
         routeOutline =
             L.polyline(
+
                 points,
+
                 {
 
                     color:
@@ -554,43 +476,6 @@ export function drawRoute(points) {
 
                     weight:
                         10,
-
-                    opacity:
-                        0.9,
-
-                    lineCap:
-                        "round",
-
-                    lineJoin:
-                        "round",
-
-                    interactive:
-                        false
-
-                }
-            ).addTo(map);
-
-    }
-
-
-    if (routeLine) {
-
-        routeLine.setLatLngs(
-            points
-        );
-
-    } else {
-
-        routeLine =
-            L.polyline(
-                points,
-                {
-
-                    color:
-                        "#2563eb",
-
-                    weight:
-                        5,
 
                     opacity:
                         0.95,
@@ -605,106 +490,60 @@ export function drawRoute(points) {
                         false
 
                 }
+
             ).addTo(map);
 
     }
 
 
     // ====================================
-    // ROAD MATCHING
+    // MAIN BLUE ROUTE
     // ====================================
 
-    if (points.length < 2) {
+    if (routeLine) {
 
-        return;
-
-    }
-
-
-    // Don't request repeatedly
-
-    if (
-        points.length -
-        lastMatchedPointCount <
-        5
-    ) {
-
-        return;
-
-    }
-
-
-    lastMatchedPointCount =
-        points.length;
-
-
-    // Clear previous timer
-
-    if (routeRequestTimer) {
-
-        clearTimeout(
-            routeRequestTimer
+        routeLine.setLatLngs(
+            points
         );
 
-    }
+    } else {
 
+        routeLine =
+            L.polyline(
 
-    routeRequestTimer =
-        setTimeout(
-            async () => {
+                points,
 
-                const roadPoints =
-                    await getRoadRoute(
-                        points
-                    );
+                {
 
+                    color:
+                        "#2563eb",
 
-                if (
-                    roadPoints &&
-                    roadPoints.length > 1
-                ) {
+                    weight:
+                        5,
 
-                    // White outline
+                    opacity:
+                        1,
 
-                    if (routeOutline) {
+                    lineCap:
+                        "round",
 
-                        routeOutline.setLatLngs(
-                            roadPoints
-                        );
+                    lineJoin:
+                        "round",
 
-                    }
-
-
-                    // Blue route
-
-                    if (routeLine) {
-
-                        routeLine.setLatLngs(
-                            roadPoints
-                        );
-
-                    }
-
-
-                    console.log(
-                        "🛣 Road route updated:",
-                        roadPoints.length,
-                        "points"
-                    );
+                    interactive:
+                        false
 
                 }
 
-            },
+            ).addTo(map);
 
-            800
-
-        );
+    }
 
 }
 
 
 // ========================================
-// START + END MARKERS
+// START / END MARKERS
 // ========================================
 
 export function showStartEndMarkers(
@@ -712,9 +551,13 @@ export function showStartEndMarkers(
 ) {
 
     if (
+
         !map ||
+
         !points ||
+
         points.length === 0
+
     ) {
 
         return;
@@ -722,7 +565,7 @@ export function showStartEndMarkers(
     }
 
 
-    // Remove old start
+    // Remove old markers
 
     if (startMarker) {
 
@@ -730,12 +573,11 @@ export function showStartEndMarkers(
             startMarker
         );
 
-        startMarker = null;
+        startMarker =
+            null;
 
     }
 
-
-    // Remove old end
 
     if (endMarker) {
 
@@ -743,7 +585,8 @@ export function showStartEndMarkers(
             endMarker
         );
 
-        endMarker = null;
+        endMarker =
+            null;
 
     }
 
@@ -754,15 +597,20 @@ export function showStartEndMarkers(
 
     startMarker =
         L.marker(
+
             points[0],
+
             {
 
                 zIndexOffset:
                     500
 
             }
+
         )
+
         .addTo(map)
+
         .bindPopup(
             "🟢 Trip Start"
         );
@@ -774,17 +622,22 @@ export function showStartEndMarkers(
 
     endMarker =
         L.marker(
+
             points[
                 points.length - 1
             ],
+
             {
 
                 zIndexOffset:
                     500
 
             }
+
         )
+
         .addTo(map)
+
         .bindPopup(
             "🔴 Trip End"
         );
@@ -793,30 +646,41 @@ export function showStartEndMarkers(
 
 
 // ========================================
-// ENABLE AUTO FOLLOW
+// AUTO FOLLOW
 // ========================================
 
 export function enableAutoFollow() {
 
-    userInteracted = false;
+    userInteracted =
+        false;
+
 
     if (
+
         marker &&
+
         map
+
     ) {
 
         const position =
             marker.getLatLng();
 
+
         map.setView(
+
             [
                 position.lat,
                 position.lng
             ],
+
             17,
+
             {
-                animate: true
+                animate:
+                    true
             }
+
         );
 
     }
@@ -825,15 +689,21 @@ export function enableAutoFollow() {
 
 
 // ========================================
-// FIT COMPLETE ROUTE
+// FIT ROUTE
 // ========================================
 
-export function fitRoute(points) {
+export function fitRoute(
+    points
+) {
 
     if (
+
         !map ||
+
         !points ||
+
         points.length === 0
+
     ) {
 
         return;
@@ -842,20 +712,25 @@ export function fitRoute(points) {
 
 
     map.fitBounds(
+
         points,
+
         {
 
             padding: [
-                40,
-                40
+                50,
+                50
             ],
 
             maxZoom:
                 17
 
         }
+
     );
 
-    userInteracted = true;
+
+    userInteracted =
+        true;
 
 }
