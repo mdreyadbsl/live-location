@@ -1,7 +1,6 @@
 // ========================================
-// VOICE GUIDE SYSTEM V1
+// VOICE GUIDE SYSTEM V2
 // ========================================
-
 
 // ========================================
 // VOICE STATE
@@ -9,6 +8,7 @@
 
 let voiceEnabled = true;
 
+// Last time speed/status was spoken
 let lastSpeedVoiceTime = 0;
 
 
@@ -22,9 +22,8 @@ export function speak(message) {
         return;
     }
 
-    if (
-        !("speechSynthesis" in window)
-    ) {
+    if (!("speechSynthesis" in window)) {
+
         console.warn(
             "Speech Synthesis is not supported."
         );
@@ -65,7 +64,7 @@ export function speak(message) {
 
 export function voiceTripStarted() {
 
-    // Reset speed timer
+    // Start the 10-minute timer
     lastSpeedVoiceTime =
         Date.now();
 
@@ -78,25 +77,27 @@ export function voiceTripStarted() {
 
 
 // ========================================
-// SMART SPEED VOICE
+// SMART SPEED / STOPPED VOICE
 // ========================================
-// Speaks current speed every 10 minutes
+//
+// Speaks only once every 10 minutes.
+//
+// Moving:
+// "Your current speed is 35 kilometers per hour."
+//
+// Stopped:
+// "You are currently stopped."
+//
 // ========================================
 
-export function voiceSpeed(
-    speed
-) {
+export function voiceSpeed(speed) {
 
     speed = Number(speed);
 
 
     // Invalid speed
-    if (
-        !isFinite(speed)
-    ) {
-
+    if (!isFinite(speed)) {
         return;
-
     }
 
 
@@ -104,7 +105,10 @@ export function voiceSpeed(
         Date.now();
 
 
-    // 10 minutes
+    // ====================================
+    // 10 MINUTES
+    // ====================================
+
     const TEN_MINUTES =
         10 * 60 * 1000;
 
@@ -122,13 +126,36 @@ export function voiceSpeed(
     }
 
 
-    // Speak speed
-    speak(
-        `Your current speed is ${Math.round(speed)} kilometers per hour.`
-    );
+    // ====================================
+    // VEHICLE STOPPED
+    // ====================================
+
+    if (speed <= 2) {
+
+        speak(
+            "You are currently stopped."
+        );
+
+    }
 
 
-    // Reset timer
+    // ====================================
+    // VEHICLE MOVING
+    // ====================================
+
+    else {
+
+        speak(
+            `Your current speed is ${Math.round(speed)} kilometers per hour.`
+        );
+
+    }
+
+
+    // ====================================
+    // RESET TIMER
+    // ====================================
+
     lastSpeedVoiceTime =
         now;
 
@@ -159,7 +186,7 @@ export function voiceTripFinished() {
     );
 
 
-    // Reset speed timer
+    // Reset timer
     lastSpeedVoiceTime = 0;
 
 }
@@ -175,7 +202,7 @@ export function toggleVoice() {
         !voiceEnabled;
 
 
-    // Stop current speech
+    // Stop speech when disabled
     if (!voiceEnabled) {
 
         if (
@@ -239,7 +266,7 @@ export function disableVoice() {
 
 
 // ========================================
-// RESET SPEED TIMER
+// RESET VOICE TIMER
 // ========================================
 
 export function resetVoiceTimer() {
@@ -255,5 +282,5 @@ export function resetVoiceTimer() {
 // ========================================
 
 console.log(
-    "🔊 Voice Guide V1 Loaded Successfully"
+    "🔊 Voice Guide V2 Loaded Successfully"
 );
