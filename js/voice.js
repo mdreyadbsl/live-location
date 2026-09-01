@@ -1,10 +1,15 @@
 // ========================================
-// VOICE ASSISTANT V1
+// VOICE GUIDE SYSTEM V1
+// ========================================
+
+
+// ========================================
+// VOICE STATE
 // ========================================
 
 let voiceEnabled = true;
-let lastSpokenSpeed = null;
-let lastSpeedTime = 0;
+
+let lastSpeedVoiceTime = 0;
 
 
 // ========================================
@@ -17,73 +22,39 @@ export function speak(message) {
         return;
     }
 
-    if (!("speechSynthesis" in window)) {
-        console.warn("⚠️ Speech Synthesis not supported");
+    if (
+        !("speechSynthesis" in window)
+    ) {
+        console.warn(
+            "Speech Synthesis is not supported."
+        );
+
         return;
     }
 
-    // Stop previous voice
+
+    // Stop previous speech
     window.speechSynthesis.cancel();
+
 
     const speech =
-        new SpeechSynthesisUtterance(message);
-
-    speech.lang = "en-US";
-    speech.rate = 1;
-    speech.pitch = 1;
-    speech.volume = 1;
-
-    window.speechSynthesis.speak(speech);
-}
-
-
-// ========================================
-// ENABLE VOICE
-// ========================================
-
-export function enableVoice() {
-
-    voiceEnabled = true;
-
-    speak("Voice assistant enabled.");
-
-}
-
-
-// ========================================
-// DISABLE VOICE
-// ========================================
-
-export function disableVoice() {
-
-    voiceEnabled = false;
-
-    window.speechSynthesis.cancel();
-
-}
-
-
-// ========================================
-// TOGGLE VOICE
-// ========================================
-
-export function toggleVoice() {
-
-    voiceEnabled = !voiceEnabled;
-
-    if (voiceEnabled) {
-
-        speak(
-            "Voice assistant enabled."
+        new SpeechSynthesisUtterance(
+            message
         );
 
-    } else {
 
-        window.speechSynthesis.cancel();
+    speech.lang = "en-US";
 
-    }
+    speech.rate = 0.95;
 
-    return voiceEnabled;
+    speech.pitch = 1.0;
+
+    speech.volume = 1.0;
+
+
+    window.speechSynthesis.speak(
+        speech
+    );
 
 }
 
@@ -94,6 +65,11 @@ export function toggleVoice() {
 
 export function voiceTripStarted() {
 
+    // Reset speed timer
+    lastSpeedVoiceTime =
+        Date.now();
+
+
     speak(
         "Trip started. I will guide you during your journey."
     );
@@ -102,46 +78,71 @@ export function voiceTripStarted() {
 
 
 // ========================================
-// SPEED ANNOUNCEMENT
+// SMART SPEED VOICE
+// ========================================
+// Speaks current speed every 10 minutes
 // ========================================
 
-export function voiceSpeed(speed) {
+export function voiceSpeed(
+    speed
+) {
 
-    speed = Number(speed) || 0;
+    speed = Number(speed);
 
-    const now = Date.now();
 
-    // Don't speak too frequently
-    if (now - lastSpeedTime < 15000) {
-        return;
-    }
-
-    // Don't repeat almost same speed
+    // Invalid speed
     if (
-        lastSpokenSpeed !== null &&
-        Math.abs(speed - lastSpokenSpeed) < 5
+        !isFinite(speed)
     ) {
+
         return;
+
     }
 
-    lastSpokenSpeed = speed;
-    lastSpeedTime = now;
 
+    const now =
+        Date.now();
+
+
+    // 10 minutes
+    const TEN_MINUTES =
+        10 * 60 * 1000;
+
+
+    // Don't speak before 10 minutes
+    if (
+        now -
+        lastSpeedVoiceTime
+        <
+        TEN_MINUTES
+    ) {
+
+        return;
+
+    }
+
+
+    // Speak speed
     speak(
-        `Your current speed is ${speed.toFixed(0)} kilometers per hour.`
+        `Your current speed is ${Math.round(speed)} kilometers per hour.`
     );
+
+
+    // Reset timer
+    lastSpeedVoiceTime =
+        now;
 
 }
 
 
 // ========================================
-// GPS ERROR
+// GPS ERROR VOICE
 // ========================================
 
 export function voiceGpsError() {
 
     speak(
-        "GPS signal is unavailable. Please check your location permission."
+        "GPS signal is unavailable. Please check your location settings."
     );
 
 }
@@ -154,14 +155,48 @@ export function voiceGpsError() {
 export function voiceTripFinished() {
 
     speak(
-        "Trip completed. Your journey has finished."
+        "Trip finished. Have a safe journey."
     );
+
+
+    // Reset speed timer
+    lastSpeedVoiceTime = 0;
 
 }
 
 
 // ========================================
-// VOICE STATUS
+// VOICE ON / OFF
+// ========================================
+
+export function toggleVoice() {
+
+    voiceEnabled =
+        !voiceEnabled;
+
+
+    // Stop current speech
+    if (!voiceEnabled) {
+
+        if (
+            "speechSynthesis"
+            in window
+        ) {
+
+            window.speechSynthesis.cancel();
+
+        }
+
+    }
+
+
+    return voiceEnabled;
+
+}
+
+
+// ========================================
+// CHECK VOICE STATUS
 // ========================================
 
 export function isVoiceEnabled() {
@@ -169,3 +204,56 @@ export function isVoiceEnabled() {
     return voiceEnabled;
 
 }
+
+
+// ========================================
+// ENABLE VOICE
+// ========================================
+
+export function enableVoice() {
+
+    voiceEnabled = true;
+
+}
+
+
+// ========================================
+// DISABLE VOICE
+// ========================================
+
+export function disableVoice() {
+
+    voiceEnabled = false;
+
+
+    if (
+        "speechSynthesis"
+        in window
+    ) {
+
+        window.speechSynthesis.cancel();
+
+    }
+
+}
+
+
+// ========================================
+// RESET SPEED TIMER
+// ========================================
+
+export function resetVoiceTimer() {
+
+    lastSpeedVoiceTime =
+        Date.now();
+
+}
+
+
+// ========================================
+// VOICE SYSTEM READY
+// ========================================
+
+console.log(
+    "🔊 Voice Guide V1 Loaded Successfully"
+);
