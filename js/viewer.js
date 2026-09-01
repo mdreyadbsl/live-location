@@ -34,8 +34,8 @@ let routeListener = null;
 let viewerLastVoiceSpeed = null;
 let viewerLastVoiceTime = 0;
 
-const VIEWER_VOICE_SPEED_CHANGE = 5;
-const VIEWER_VOICE_INTERVAL = 15000;
+const VIEWER_VOICE_INTERVAL =
+    10 * 60 * 1000;
 
 // ==========================
 // Firebase Login
@@ -151,6 +151,9 @@ if (!window.viewerTripStarted) {
 
     window.viewerTripStarted = true;
 
+    viewerLastVoiceTime =
+        Date.now();
+
     await new Promise(resolve =>
         setTimeout(resolve, 1800)
     );
@@ -169,30 +172,35 @@ if (!window.viewerTripStarted) {
                 Number(data.speed || 0);
 
                 // ========================================
-// VIEWER SMART SPEED VOICE
+// ========================================
+// VIEWER SMART VOICE
 // ========================================
 
 const now = Date.now();
 
-if (viewerTripStarted) {
+if (
+    now - viewerLastVoiceTime >=
+    VIEWER_VOICE_INTERVAL
+) {
 
-    if (
-        viewerLastVoiceSpeed === null ||
-        Math.abs(
-            speed - viewerLastVoiceSpeed
-        ) >= VIEWER_VOICE_SPEED_CHANGE ||
-        now - viewerLastVoiceTime >= VIEWER_VOICE_INTERVAL
-    ) {
+    if (speed <= 2) {
 
         viewerSpeak(
-            "Current speed " +
-            speed.toFixed(0) +
-            " kilometers per hour"
+            "You are currently stopped."
         );
 
-        viewerLastVoiceSpeed = speed;
-        viewerLastVoiceTime = now;
+    } else {
+
+        viewerSpeak(
+            "Your current speed is " +
+            Math.round(speed) +
+            " kilometers per hour."
+        );
+
     }
+
+    viewerLastVoiceTime = now;
+
 }
 
             // ==========================
