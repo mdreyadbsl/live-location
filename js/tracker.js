@@ -627,19 +627,7 @@ window.stopTracking = async function () {
 
 }
 
-            console.log(
-                "✅ Trip Finished:",
-                tripId
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Trip Finish Error:",
-                error
-            );
-
-        }
+        
 
     }
 
@@ -652,7 +640,7 @@ window.stopTracking = async function () {
         "⏹ Tracking Stopped"
     );
 
-};
+
 
 
 // ========================================
