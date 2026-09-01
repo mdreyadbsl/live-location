@@ -1,6 +1,15 @@
 import { loginAnonymous, database } from "./firebase.js";
 
 import {
+    speak,
+    voiceTripStarted,
+    voiceSpeed,
+    voiceGpsError,
+    voiceTripFinished,
+    toggleVoice
+} from "./voice.js";
+
+import {
     createMap,
     updateMarker,
     drawRoute
@@ -239,7 +248,7 @@ window.startTracking = async function () {
     // ====================================
     // START GPS WATCH
     // ====================================
-
+let voiceStarted = false;
     watchId =
         navigator.geolocation.watchPosition(
 
@@ -260,7 +269,13 @@ window.startTracking = async function () {
 
                 const timestamp =
                     Date.now();
+if (!voiceStarted) {
 
+    voiceTripStarted();
+
+    voiceStarted = true;
+
+}
 
                 // =================================
                 // LIVE SPEED
@@ -305,7 +320,15 @@ window.startTracking = async function () {
                         speed.toFixed(1)
                     );
 
+// =================================
+// VOICE SPEED GUIDANCE
+// =================================
 
+if (typeof voiceSpeed === "function") {
+
+    voiceSpeed(speed);
+
+}
                 // =================================
                 // UPDATE MAP MARKER
                 // =================================
@@ -493,6 +516,12 @@ window.startTracking = async function () {
 
     console.error("GPS Error:", error);
 
+if (typeof voiceGpsError === "function") {
+
+    voiceGpsError();
+
+}
+
     if (error.code === 1) {
 
         status.innerText =
@@ -613,6 +642,12 @@ window.stopTracking = async function () {
             "🗑️ Trip deleted from Firebase:",
             tripId
         );
+        
+        if (typeof voiceTripFinished === "function") {
+
+    voiceTripFinished();
+
+}
 
     } catch (error) {
 
