@@ -14,10 +14,10 @@ import {
 import { cleanupOldTrips } from "./cleanup.js";
 
 import {
-    ref,
+     ref,
     set,
     push,
-    update
+    remove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
@@ -597,30 +597,35 @@ window.stopTracking = async function () {
 
     if (tripId) {
 
-        try {
+    try {
 
-            await update(
+        await remove(
+            ref(
+                database,
+                "trips/" +
+                deviceId +
+                "/" +
+                tripId
+            )
+        );
 
-                ref(
-                    database,
-                    "trips/" +
-                    deviceId +
-                    "/" +
-                    tripId +
-                    "/info"
-                ),
+        console.log(
+            "🗑️ Trip deleted from Firebase:",
+            tripId
+        );
 
-                {
+    } catch (error) {
 
-                    endTime:
-                        Date.now(),
+        console.error(
+            "❌ Trip delete failed:",
+            error
+        );
 
-                    status:
-                        "FINISHED"
+    }
 
-                }
+    tripId = null;
 
-            );
+}
 
             console.log(
                 "✅ Trip Finished:",
