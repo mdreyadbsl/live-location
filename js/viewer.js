@@ -127,7 +127,7 @@ window.startViewer = function () {
             "locations/" + deviceId
         ),
 
-        (snapshot) => {
+                async (snapshot) => {
 
             if (!snapshot.exists()) {
 
@@ -150,6 +150,10 @@ if (!window.viewerTripStarted) {
     viewerSpeak("Trip started");
 
     window.viewerTripStarted = true;
+
+    await new Promise(resolve =>
+        setTimeout(resolve, 1800)
+    );
 }
 
             const lat =
@@ -170,24 +174,25 @@ if (!window.viewerTripStarted) {
 
 const now = Date.now();
 
-if (
-    (
+if (viewerTripStarted) {
+
+    if (
         viewerLastVoiceSpeed === null ||
         Math.abs(
             speed - viewerLastVoiceSpeed
         ) >= VIEWER_VOICE_SPEED_CHANGE ||
         now - viewerLastVoiceTime >= VIEWER_VOICE_INTERVAL
-    )
-) {
+    ) {
 
-    viewerSpeak(
-        "Current speed " +
-        speed.toFixed(0) +
-        " kilometers per hour"
-    );
+        viewerSpeak(
+            "Current speed " +
+            speed.toFixed(0) +
+            " kilometers per hour"
+        );
 
-    viewerLastVoiceSpeed = speed;
-    viewerLastVoiceTime = now;
+        viewerLastVoiceSpeed = speed;
+        viewerLastVoiceTime = now;
+    }
 }
 
             // ==========================
