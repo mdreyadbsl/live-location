@@ -31,6 +31,12 @@ let replayTimer = null;
 let locationListener = null;
 let routeListener = null;
 
+let viewerLastVoiceSpeed = null;
+let viewerLastVoiceTime = 0;
+
+const VIEWER_VOICE_SPEED_CHANGE = 5;
+const VIEWER_VOICE_INTERVAL = 15000;
+
 // ==========================
 // Firebase Login
 // ==========================
@@ -135,6 +141,17 @@ window.startViewer = function () {
             const data =
                 snapshot.val();
 
+                // ========================================
+// VIEWER TRIP START VOICE
+// ========================================
+
+if (!window.viewerTripStarted) {
+
+    viewerSpeak("Trip started");
+
+    window.viewerTripStarted = true;
+}
+
             const lat =
                 Number(data.latitude);
 
@@ -146,6 +163,32 @@ window.startViewer = function () {
 
             const speed =
                 Number(data.speed || 0);
+
+                // ========================================
+// VIEWER SMART SPEED VOICE
+// ========================================
+
+const now = Date.now();
+
+if (
+    (
+        viewerLastVoiceSpeed === null ||
+        Math.abs(
+            speed - viewerLastVoiceSpeed
+        ) >= VIEWER_VOICE_SPEED_CHANGE ||
+        now - viewerLastVoiceTime >= VIEWER_VOICE_INTERVAL
+    )
+) {
+
+    viewerSpeak(
+        "Current speed " +
+        speed.toFixed(0) +
+        " kilometers per hour"
+    );
+
+    viewerLastVoiceSpeed = speed;
+    viewerLastVoiceTime = now;
+}
 
             // ==========================
             // UPDATE MAP + SPEED
@@ -616,3 +659,28 @@ window.addEventListener(
 console.log(
     "✅ Viewer V4 Loaded Successfully"
 );
+// ========================================
+// VIEWER VOICE SYSTEM
+// ========================================
+
+function viewerSpeak(text) {
+
+    if (!("speechSynthesis" in window)) {
+        console.log("Speech Synthesis not supported");
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance =
+        new SpeechSynthesisUtterance(text);
+
+    utterance.lang = "en-US";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    window.speechSynthesis.speak(
+        utterance
+    );
+}

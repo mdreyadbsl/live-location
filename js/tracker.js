@@ -249,6 +249,13 @@ window.startTracking = async function () {
     // START GPS WATCH
     // ====================================
 let voiceStarted = false;
+
+let lastVoiceSpeed = null;
+let lastVoiceTime = 0;
+
+const VOICE_SPEED_CHANGE = 5;
+const VOICE_INTERVAL = 15000;
+
     watchId =
         navigator.geolocation.watchPosition(
 
@@ -274,6 +281,9 @@ if (!voiceStarted) {
     voiceTripStarted();
 
     voiceStarted = true;
+
+    // Give Trip Started voice time to finish
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
 }
 
@@ -320,14 +330,27 @@ if (!voiceStarted) {
                         speed.toFixed(1)
                     );
 
+
+
 // =================================
-// VOICE SPEED GUIDANCE
+// SMART VOICE SPEED GUIDANCE
 // =================================
 
-if (typeof voiceSpeed === "function") {
+const now = Date.now();
+
+if (
+    typeof voiceSpeed === "function" &&
+    (
+        lastVoiceSpeed === null ||
+        Math.abs(speed - lastVoiceSpeed) >= VOICE_SPEED_CHANGE ||
+        now - lastVoiceTime >= VOICE_INTERVAL
+    )
+) {
 
     voiceSpeed(speed);
 
+    lastVoiceSpeed = speed;
+    lastVoiceTime = now;
 }
                 // =================================
                 // UPDATE MAP MARKER
@@ -516,10 +539,8 @@ if (typeof voiceSpeed === "function") {
 
     console.error("GPS Error:", error);
 
-if (typeof voiceGpsError === "function") {
-
+    if (typeof voiceGpsError === "function") {
     voiceGpsError();
-
 }
 
     if (error.code === 1) {
@@ -642,7 +663,7 @@ window.stopTracking = async function () {
             "🗑️ Trip deleted from Firebase:",
             tripId
         );
-        
+
         if (typeof voiceTripFinished === "function") {
 
     voiceTripFinished();
@@ -665,7 +686,9 @@ window.stopTracking = async function () {
         
 
     }
-
+if (typeof voiceTripFinished === "function") {
+    voiceTripFinished();
+}
 
     status.innerText =
         "⏹ Tracking Stopped";
