@@ -23,7 +23,8 @@ import {
 
 import {
     checkRoadChange,
-    resetRoadVoice
+    resetRoadVoice,
+    isRoadVoiceSpeaking
 } from "./roadVoice.js";
 
 // ==========================
@@ -194,7 +195,8 @@ const now = Date.now();
 if (
     now - viewerLastVoiceTime >=
     VIEWER_VOICE_INTERVAL &&
-    !window.speechSynthesis.speaking
+    !window.speechSynthesis.speaking &&
+    !isRoadVoiceSpeaking()
 ) {
 
     if (speed <= 2) {
@@ -210,9 +212,11 @@ if (
             Math.round(speed) +
             " kilometers per hour."
         );
+
     }
 
-    viewerLastVoiceTime = now;
+    viewerLastVoiceTime =
+        now;
 }
 
             // ==========================
@@ -691,21 +695,35 @@ console.log(
 function viewerSpeak(text) {
 
     if (!("speechSynthesis" in window)) {
-        console.log("Speech Synthesis not supported");
+
+        console.log(
+            "Speech Synthesis not supported"
+        );
+
         return;
+
     }
 
-    window.speechSynthesis.cancel();
 
     const utterance =
         new SpeechSynthesisUtterance(text);
 
-    utterance.lang = "en-US";
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
+
+    utterance.lang =
+        "en-US";
+
+    utterance.rate =
+        1;
+
+    utterance.pitch =
+        1;
+
+    utterance.volume =
+        1;
+
 
     window.speechSynthesis.speak(
         utterance
     );
+
 }

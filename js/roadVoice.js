@@ -1,5 +1,5 @@
 // ==========================================
-// 🚗 Road Name Detection & Voice System V2
+// 🚗 Road Name Detection & Voice System V3
 // ==========================================
 
 let lastRoadName = "";
@@ -10,7 +10,7 @@ let lastAnnouncementTime = 0;
 // 🔊 Voice speaking status
 let roadVoiceSpeaking = false;
 
-// Check road name every 20 seconds
+// Check road every 20 seconds
 const ROAD_CHECK_INTERVAL = 20000;
 
 // Same road announcement cooldown
@@ -26,22 +26,30 @@ export async function getRoadName(lat, lng) {
     try {
 
         const url =
-            `https://nominatim.openstreetmap.org/reverse` +
-            `?format=jsonv2` +
-            `&lat=${lat}` +
-            `&lon=${lng}` +
-            `&zoom=18` +
-            `&addressdetails=1`;
+            "https://nominatim.openstreetmap.org/reverse" +
+            "?format=jsonv2" +
+            "&lat=" + encodeURIComponent(lat) +
+            "&lon=" + encodeURIComponent(lng) +
+            "&zoom=18" +
+            "&addressdetails=1";
 
-        const response = await fetch(url);
+        const response =
+            await fetch(url);
 
         if (!response.ok) {
-            throw new Error("Road API request failed");
+
+            throw new Error(
+                "Road API request failed: " +
+                response.status
+            );
+
         }
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
-        const address = data.address || {};
+        const address =
+            data.address || {};
 
         const roadName =
             address.road ||
@@ -60,7 +68,9 @@ export async function getRoadName(lat, lng) {
         );
 
         return "";
+
     }
+
 }
 
 
@@ -70,10 +80,11 @@ export async function getRoadName(lat, lng) {
 
 function normalizeRoadName(name) {
 
-    return name
+    return String(name || "")
         .toLowerCase()
         .replace(/\s+/g, " ")
         .trim();
+
 }
 
 
@@ -87,19 +98,30 @@ export async function checkRoadChange(
     speakFunction
 ) {
 
-    const now = Date.now();
+    const now =
+        Date.now();
 
 
+    // ======================================
     // Prevent too many API requests
+    // ======================================
+
     if (
         now - lastCheckTime <
         ROAD_CHECK_INTERVAL
     ) {
+
         return;
+
     }
 
-    lastCheckTime = now;
+    lastCheckTime =
+        now;
 
+
+    // ======================================
+    // Get Current Road
+    // ======================================
 
     const roadName =
         await getRoadName(lat, lng);
@@ -112,6 +134,7 @@ export async function checkRoadChange(
         );
 
         return;
+
     }
 
 
@@ -124,7 +147,6 @@ export async function checkRoadChange(
     const normalizedRoad =
         normalizeRoadName(roadName);
 
-
     const normalizedLastRoad =
         normalizeRoadName(lastRoadName);
 
@@ -135,7 +157,8 @@ export async function checkRoadChange(
 
     if (!lastRoadName) {
 
-        lastRoadName = roadName;
+        lastRoadName =
+            roadName;
 
         console.log(
             "🛣️ Starting Road:",
@@ -143,6 +166,7 @@ export async function checkRoadChange(
         );
 
         return;
+
     }
 
 
@@ -156,11 +180,12 @@ export async function checkRoadChange(
     ) {
 
         return;
+
     }
 
 
     // ======================================
-    // NEW ROAD DETECTED 🚨
+    // NEW ROAD DETECTED
     // ======================================
 
     console.log(
@@ -172,7 +197,8 @@ export async function checkRoadChange(
 
 
     // Update current road
-    lastRoadName = roadName;
+    lastRoadName =
+        roadName;
 
 
     // ======================================
@@ -184,11 +210,9 @@ export async function checkRoadChange(
             lastAnnouncedRoad
         );
 
-
     const sameAsLastAnnouncement =
         normalizedRoad ===
         normalizedLastAnnounced;
-
 
     const withinCooldown =
         now - lastAnnouncementTime <
@@ -206,29 +230,64 @@ export async function checkRoadChange(
         );
 
         return;
+
     }
 
 
     // ======================================
-    // Voice Announcement 🔊
+    // Check Speak Function
     // ======================================
 
     if (
-    typeof speakFunction ===
-    "function"
-) {
-
-    // 🔊 Prevent overlapping voice
-    if (roadVoiceSpeaking) {
+        typeof speakFunction !==
+        "function"
+    ) {
 
         console.log(
-            "🔇 Road voice skipped because another voice is speaking."
+            "⚠️ Voice function not available"
         );
 
         return;
+
     }
 
-    roadVoiceSpeaking = true;
+
+    // ======================================
+    // Prevent Road Voice Overlap
+    // ======================================
+
+    if (roadVoiceSpeaking) {
+
+        console.log(
+            "🔇 Road voice already speaking"
+        );
+
+        return;
+
+    }
+
+
+    roadVoiceSpeaking =
+        true;
+
+
+    // Save announcement
+    lastAnnouncedRoad =
+        roadName;
+
+    lastAnnouncementTime =
+        now;
+
+
+    console.log(
+        "🔊 Road Voice:",
+        roadName
+    );
+
+
+    // ======================================
+    // Speak
+    // ======================================
 
     speakFunction(
         "You are now on " +
@@ -236,19 +295,60 @@ export async function checkRoadChange(
         "."
     );
 
-    lastAnnouncedRoad =
-        roadName;
 
-    lastAnnouncementTime =
-        now;
+    // ======================================
+    // Detect Speech End
+    // ======================================
 
-    // Allow next voice after speech finishes
+    const speechCheck =
+        setInterval(() => {
+
+            if (
+                !window.speechSynthesis ||
+                !window.speechSynthesis.speaking
+            ) {
+
+                clearInterval(
+                    speechCheck
+                );
+
+                roadVoiceSpeaking =
+                    false;
+
+                console.log(
+                    "🔓 Road voice unlocked"
+                );
+
+            }
+
+        }, 250);
+
+
+    // ======================================
+    // Safety Timeout
+    // ======================================
+
     setTimeout(() => {
 
-        roadVoiceSpeaking = false;
+        clearInterval(
+            speechCheck
+        );
 
-    }, 4000);
+        roadVoiceSpeaking =
+            false;
+
+    }, 10000);
+
 }
+
+
+// ==========================================
+// Road Voice Status
+// ==========================================
+
+export function isRoadVoiceSpeaking() {
+
+    return roadVoiceSpeaking;
 
 }
 
@@ -259,20 +359,26 @@ export async function checkRoadChange(
 
 export function resetRoadVoice() {
 
-    lastRoadName = "";
+    lastRoadName =
+        "";
 
-    lastCheckTime = 0;
+    lastCheckTime =
+        0;
 
-    lastAnnouncedRoad = "";
+    lastAnnouncedRoad =
+        "";
 
-    lastAnnouncementTime = 0;
+    lastAnnouncementTime =
+        0;
 
-    roadVoiceSpeaking = false;
+    roadVoiceSpeaking =
+        false;
 
 
     console.log(
         "🔄 Road Voice Reset"
     );
+
 }
 
 
@@ -281,5 +387,5 @@ export function resetRoadVoice() {
 // ==========================================
 
 console.log(
-    "🛣️ Road Voice V2 Loaded Successfully"
+    "🛣️ Road Voice V3 Loaded Successfully"
 );
