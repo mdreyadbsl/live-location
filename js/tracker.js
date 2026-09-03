@@ -29,6 +29,11 @@ import {
     remove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+import {
+    checkRoadChange,
+    resetRoadVoice
+} from "./roadVoice.js";
+
 
 // ========================================
 // TRACKER START
@@ -179,6 +184,8 @@ window.startTracking = async function () {
     tripId =
         "TRIP_" + Date.now();
 
+// Reset road detection for new trip
+resetRoadVoice();
 
     console.log(
         "🚗 Trip ID:",
@@ -383,7 +390,8 @@ if (
                     liveRoutePoints
                 );
 
-
+                // 🛣️ Check current road
+                checkRoadChange(lat, lng, speak);
                 // =================================
                 // UPDATE UI
                 // =================================

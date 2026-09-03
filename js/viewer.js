@@ -20,6 +20,12 @@ import {
     get
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+
+import {
+    checkRoadChange,
+    resetRoadVoice
+} from "./roadVoice.js";
+
 // ==========================
 // Global Variables
 // ==========================
@@ -79,6 +85,11 @@ viewButton.innerText =
 // ==========================
 
 window.startViewer = function () {
+
+    resetRoadVoice();
+    window.viewerTripStarted = false;
+    viewerLastVoiceSpeed = null;
+    viewerLastVoiceTime = 0;
 
     const deviceId =
         document
@@ -171,6 +182,8 @@ if (!window.viewerTripStarted) {
             const speed =
                 Number(data.speed || 0);
 
+          // 🛣️ Check road change in View Mode
+          checkRoadChange(lat, lng, viewerSpeak);
                 // ========================================
 // ========================================
 // VIEWER SMART VOICE
@@ -180,7 +193,8 @@ const now = Date.now();
 
 if (
     now - viewerLastVoiceTime >=
-    VIEWER_VOICE_INTERVAL
+    VIEWER_VOICE_INTERVAL &&
+    !window.speechSynthesis.speaking
 ) {
 
     if (speed <= 2) {
@@ -196,11 +210,9 @@ if (
             Math.round(speed) +
             " kilometers per hour."
         );
-
     }
 
     viewerLastVoiceTime = now;
-
 }
 
             // ==========================
